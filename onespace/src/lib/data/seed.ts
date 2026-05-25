@@ -163,7 +163,7 @@ export const visitors: Visitor[] = [
 export const bookings: Booking[] = [
   {
     id: "bk1",
-    seatId: "room-alpha",
+    roomId: "room-alpha",
     memberId: "m2",
     purpose: "Client Call",
     startTime: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),

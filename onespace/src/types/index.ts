@@ -82,11 +82,19 @@ export interface Visitor {
 
 export interface Booking {
   id: string;
-  seatId: string;
+  roomId: string;
   memberId?: string;
   guestName?: string;
   purpose?: string;
   startTime: string;
   endTime: string;
   status: "confirmed" | "completed" | "cancelled";
+}
+
+export interface Room {
+  id: string;
+  branchId: string;
+  name: string;
+  capacity: number;
+  type: "conference" | "phone_booth";
 }
