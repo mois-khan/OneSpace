@@ -61,12 +61,21 @@ export const occupancyTrendData = Array.from({ length: 30 }).map((_, i) => {
   };
 });
 
-// Branch overview table data
+import { generateFloorPlan } from "./floor-plan";
+
+// Branch overview table data dynamically calculated to ensure consistency
 export const branchOverviewData = [
-  { id: "b1", name: "Hitech City", occupancy: 82, members: 210, mrr: 3512400, overdue: 0, health: "Healthy" },
-  { id: "b2", name: "Gachibowli", occupancy: 78, members: 195, mrr: 3184800, overdue: 1, health: "Watch" },
-  { id: "b3", name: "Raidurg", occupancy: 85, members: 140, mrr: 1462000, overdue: 0, health: "Healthy" },
-  { id: "b4", name: "Kondapur", occupancy: 71, members: 110, mrr: 844000, overdue: 0, health: "Healthy" },
-  { id: "b5", name: "Shaikpet-I", occupancy: 68, members: 85, mrr: 526000, overdue: 2, health: "Action" },
-  { id: "b6", name: "Shaikpet-II", occupancy: 61, members: 72, mrr: 408000, overdue: 1, health: "Watch" },
-];
+  { id: "b1", name: "Hitech City", members: 210, mrr: 3512400, overdue: 0, health: "Healthy" },
+  { id: "b2", name: "Gachibowli", members: 195, mrr: 3184800, overdue: 1, health: "Watch" },
+  { id: "b3", name: "Raidurg", members: 140, mrr: 1462000, overdue: 0, health: "Healthy" },
+  { id: "b4", name: "Kondapur", members: 110, mrr: 844000, overdue: 0, health: "Healthy" },
+  { id: "b5", name: "Shaikpet-I", members: 85, mrr: 526000, overdue: 2, health: "Action" },
+  { id: "b6", name: "Shaikpet-II", members: 72, mrr: 408000, overdue: 1, health: "Watch" },
+].map(branch => {
+  const floorPlan = generateFloorPlan(branch.id);
+  const totalSeats = floorPlan.seats.length;
+  const occupiedSeats = floorPlan.seats.filter(s => s.status === "occupied" || s.status === "reserved").length;
+  const occupancy = totalSeats > 0 ? Math.round((occupiedSeats / totalSeats) * 100) : 0;
+  
+  return { ...branch, occupancy };
+});

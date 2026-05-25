@@ -174,6 +174,7 @@ function generateHitechCity(): FloorPlan {
   addRoomSeat(seats, seatIdx, memberIdx, "h-conf1", "CONF-A", 555, 395, 130, 60, "reserved");
   addRoomSeat(seats, seatIdx, memberIdx, "h-pb1", "PB-01", 590, 45, 40, 40, "occupied");
   addRoomSeat(seats, seatIdx, memberIdx, "h-pb2", "PB-02", 670, 45, 40, 40, "available");
+  addRoomSeat(seats, seatIdx, memberIdx, "h-mgr", "MGR", 735, 155, 70, 50, "occupied");
   return { zones, seats, canvasWidth: 840, canvasHeight: 500, branchName: "Hitech City", address: "Hitech City, Hyderabad" };
 }
 
@@ -208,6 +209,7 @@ function generateGachibowli(): FloorPlan {
   addRoomSeat(seats, seatIdx, memberIdx, "g-conf2", "CONF-B", 660, 160, 120, 40, "available");
   addRoomSeat(seats, seatIdx, memberIdx, "g-pb1", "PB-01", 653, 255, 44, 30, "occupied");
   addRoomSeat(seats, seatIdx, memberIdx, "g-pb2", "PB-02", 743, 255, 44, 30, "available");
+  addRoomSeat(seats, seatIdx, memberIdx, "g-mgr", "MGR", 660, 345, 120, 50, "occupied");
   // Pin Ravi Kumar + Priya Mehta
   const occ = seats.filter(s => s.status === "occupied");
   if (occ.length >= 2) { occ[0].memberId = "m1"; occ[1].memberId = "m2"; }
@@ -237,6 +239,7 @@ function generateRaidurg(): FloorPlan {
   addSeatGrid(seats, rand, seatIdx, memberIdx, "r-cab2", "CB", 180, 340, 2, 2, 38, 26, 14, 14, 0.80);
   addRoomSeat(seats, seatIdx, memberIdx, "r-conf1", "CONF", 355, 42, 110, 40, "available");
   addRoomSeat(seats, seatIdx, memberIdx, "r-pb1", "PB-01", 510, 42, 40, 40, "occupied");
+  addRoomSeat(seats, seatIdx, memberIdx, "r-mgr", "MGR", 575, 145, 70, 50, "occupied");
   return { zones, seats, canvasWidth: 680, canvasHeight: 460, branchName: "Raidurg", address: "Raidurg, Hyderabad" };
 }
 

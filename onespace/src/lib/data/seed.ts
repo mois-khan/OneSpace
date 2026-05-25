@@ -28,7 +28,8 @@ export const members: Member[] = [
     daysSinceLastVisit: 22,
     avgVisitsPerMonth: 6,
     memberSince: "Jan 2025",
-    monthsAsMember: 16
+    monthsAsMember: 16,
+    riskScore: 88
   },
   {
     id: "m2",
@@ -48,7 +49,38 @@ export const members: Member[] = [
     daysSinceLastVisit: 0,
     avgVisitsPerMonth: 15,
     memberSince: "Mar 2025",
-    monthsAsMember: 14
+    monthsAsMember: 14,
+    riskScore: 12
+  },
+  {
+    id: "m3", branchId: "b1", name: "Meghana Rao", company: "SwiftPay Fintech", email: "meghana@swiftpay.in",
+    phone: "+91 9876543212", planType: "cabin", monthlyFee: 22000, contractStart: "2024-06-01",
+    contractEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), status: "expiring",
+    tickets: [], invoices: [], daysSinceLastVisit: 18, avgVisitsPerMonth: 4, memberSince: "Jun 2024", monthsAsMember: 23, riskScore: 76
+  },
+  {
+    id: "m4", branchId: "b4", name: "Aditya Singh", company: "UrbanGrid Design", email: "aditya@urbangrid.in",
+    phone: "+91 9876543213", planType: "dedicated", monthlyFee: 15000, contractStart: "2025-06-01",
+    contractEnd: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(), status: "expiring",
+    tickets: [], invoices: [], daysSinceLastVisit: 5, avgVisitsPerMonth: 18, memberSince: "Jun 2025", monthsAsMember: 11, riskScore: 71
+  },
+  {
+    id: "m5", branchId: "b2", name: "Pooja Iyer", company: "", email: "pooja@example.com",
+    phone: "+91 9876543214", planType: "flexi", monthlyFee: 7999, contractStart: "2025-06-01",
+    contractEnd: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString(), status: "active",
+    tickets: [], invoices: [], daysSinceLastVisit: 12, avgVisitsPerMonth: 10, memberSince: "Jun 2025", monthsAsMember: 11, riskScore: 64
+  },
+  {
+    id: "m6", branchId: "b5", name: "Sai Teja", company: "DataForge Analytics", email: "sai@dataforge.in",
+    phone: "+91 9876543215", planType: "dedicated", monthlyFee: 12000, contractStart: "2025-06-01",
+    contractEnd: new Date(Date.now() + 32 * 24 * 60 * 60 * 1000).toISOString(), status: "active",
+    tickets: [], invoices: [], daysSinceLastVisit: 2, avgVisitsPerMonth: 20, memberSince: "Jun 2025", monthsAsMember: 11, riskScore: 58
+  },
+  {
+    id: "m7", branchId: "b3", name: "Keerthi Nair", company: "FreshWorks India", email: "keerthi@freshworks.com",
+    phone: "+91 9876543216", planType: "cabin", monthlyFee: 18000, contractStart: "2024-07-01",
+    contractEnd: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(), status: "active",
+    tickets: [], invoices: [], daysSinceLastVisit: 1, avgVisitsPerMonth: 22, memberSince: "Jul 2024", monthsAsMember: 22, riskScore: 51
   }
 ];
 
@@ -83,7 +115,48 @@ export const visitors: Visitor[] = [
     purpose: "Client meeting",
     hostName: "Priya Mehta",
     qrCode: "qr-1234",
-    checkInAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    checkInAt: new Date(Date.now() - 2 * 60 * 60 * 1000 - 14 * 60 * 1000).toISOString(), // 2h 14m ago
+  },
+  {
+    id: "v2",
+    branchId: "b2",
+    name: "Divya Nair",
+    phone: "+91 8765432109",
+    purpose: "Interview",
+    hostName: "Ravi Kumar",
+    qrCode: "qr-1235",
+    checkInAt: new Date(Date.now() - 1 * 60 * 60 * 1000 - 29 * 60 * 1000).toISOString(), // 1h 29m ago
+  },
+  {
+    id: "v3",
+    branchId: "b2",
+    name: "Faisal Ahmed",
+    phone: "+91 7654321098",
+    purpose: "Site visit",
+    hostName: "(Walk-in)",
+    qrCode: "qr-1236",
+    checkInAt: new Date(Date.now() - 44 * 60 * 1000).toISOString(), // 44m ago
+  },
+  {
+    id: "v4",
+    branchId: "b2",
+    name: "Sneha Reddy",
+    phone: "+91 6543210987",
+    purpose: "Demo",
+    hostName: "Vikram Rao",
+    qrCode: "qr-1237",
+    checkInAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    checkOutAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // Checked out 2h ago
+  },
+  {
+    id: "v5",
+    branchId: "b2",
+    name: "Arvind Patil",
+    phone: "+91 5432109876",
+    purpose: "Delivery",
+    hostName: "Reception",
+    qrCode: "qr-1238",
+    checkInAt: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(), // Overstaying > 8h
   }
 ];
 

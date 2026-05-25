@@ -27,16 +27,105 @@ function ControlsBridge({ controlsRef }: { controlsRef: React.MutableRefObject<a
   return null;
 }
 
-// Premium SVG icon renderer for zone labels
+// Premium SVG icon renderer — uses <path> with scale transform (no nested <svg>)
 function ZoneIcon({ type, x, y }: { type: Zone["type"]; x: number; y: number }) {
   const path = zoneIcons[type];
   if (!path) return null;
   return (
     <g transform={`translate(${x}, ${y})`}>
-      <rect x={-2} y={-2} width={18} height={18} rx={4} fill="#fff" opacity={0.7} />
-      <svg viewBox="0 0 24 24" width={14} height={14}>
-        <path d={path} fill="none" stroke="#6B7280" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <rect x={-2} y={-2} width={18} height={18} rx={4} fill="#fff" opacity={0.75} />
+      <g transform="scale(0.583)">
+        <path d={path} fill="none" stroke="#6B7280" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+    </g>
+  );
+}
+
+// Decorative furniture elements for non-seat zones
+function ZoneDecoration({ zone }: { zone: Zone }) {
+  const cx = zone.x + zone.width / 2;
+  const cy = zone.y + zone.height / 2 + 6;
+
+  if (zone.type === "conference") {
+    // Conference table
+    const tw = Math.min(zone.width * 0.55, 80);
+    const th = Math.min(zone.height * 0.35, 30);
+    return (
+      <g opacity={0.25}>
+        <rect x={cx - tw / 2} y={cy - th / 2} width={tw} height={th} rx={th / 2} fill="#9CA3AF" stroke="#6B7280" strokeWidth={0.6} />
+      </g>
+    );
+  }
+  if (zone.type === "lounge") {
+    // L-shaped couch
+    return (
+      <g opacity={0.2}>
+        <rect x={zone.x + 12} y={cy - 8} width={zone.width * 0.5} height={16} rx={4} fill="#818CF8" stroke="#6366F1" strokeWidth={0.5} />
+        <rect x={zone.x + 12} y={cy + 8} width={20} height={20} rx={4} fill="#818CF8" stroke="#6366F1" strokeWidth={0.5} />
+        {/* Coffee table */}
+        <circle cx={zone.x + zone.width * 0.65} cy={cy + 4} r={8} fill="#D1D5DB" stroke="#9CA3AF" strokeWidth={0.5} />
+      </g>
+    );
+  }
+  if (zone.type === "reception") {
+    // Reception desk (curved)
+    const dw = Math.min(zone.width * 0.6, 100);
+    return (
+      <g opacity={0.2}>
+        <path
+          d={`M${cx - dw / 2},${cy + 10} Q${cx},${cy - 16} ${cx + dw / 2},${cy + 10}`}
+          fill="none" stroke="#78716C" strokeWidth={3} strokeLinecap="round"
+        />
+        {/* Chair behind desk */}
+        <circle cx={cx} cy={cy + 18} r={5} fill="#A8A29E" stroke="#78716C" strokeWidth={0.5} />
+      </g>
+    );
+  }
+  if (zone.type === "pantry") {
+    // Counter + sink circle
+    return (
+      <g opacity={0.2}>
+        <rect x={zone.x + 10} y={cy - 4} width={zone.width - 20} height={10} rx={3} fill="#F59E0B" stroke="#D97706" strokeWidth={0.5} />
+        <circle cx={zone.x + zone.width - 24} cy={cy + 1} r={4} fill="none" stroke="#D97706" strokeWidth={0.8} />
+      </g>
+    );
+  }
+  if (zone.type === "phone_booth") {
+    // Small desk
+    return (
+      <g opacity={0.2}>
+        <rect x={cx - 10} y={cy - 3} width={20} height={6} rx={2} fill="#6EE7B7" stroke="#34D399" strokeWidth={0.5} />
+      </g>
+    );
+  }
+  if (zone.type === "manager") {
+    // L-desk + chair
+    return (
+      <g opacity={0.2}>
+        <rect x={zone.x + 15} y={cy - 10} width={zone.width * 0.5} height={14} rx={2} fill="#FCA5A5" stroke="#F87171" strokeWidth={0.5} />
+        <rect x={zone.x + 15} y={cy + 4} width={14} height={18} rx={2} fill="#FCA5A5" stroke="#F87171" strokeWidth={0.5} />
+        <circle cx={zone.x + zone.width * 0.6} cy={cy + 14} r={5} fill="#FECACA" stroke="#F87171" strokeWidth={0.5} />
+      </g>
+    );
+  }
+  return null;
+}
+
+// Door swing arc indicator
+function DoorArc({ x, y, radius, startAngle, endAngle, flip }: { x: number; y: number; radius: number; startAngle: number; endAngle: number; flip?: boolean }) {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const x1 = x + radius * Math.cos(toRad(startAngle));
+  const y1 = y + radius * Math.sin(toRad(startAngle));
+  const x2 = x + radius * Math.cos(toRad(endAngle));
+  const y2 = y + radius * Math.sin(toRad(endAngle));
+  return (
+    <g opacity={0.3}>
+      <path
+        d={`M${x},${y} L${x1},${y1} A${radius},${radius} 0 0 ${flip ? 0 : 1} ${x2},${y2} Z`}
+        fill="#CBD5E1"
+        stroke="#94A3B8"
+        strokeWidth={0.5}
+      />
     </g>
   );
 }
@@ -191,6 +280,9 @@ export function MapContainer({
 
                 {/* Premium SVG Icon */}
                 <ZoneIcon type={zone.type} x={zone.x + 8} y={zone.y + 5} />
+
+                {/* Decorative furniture */}
+                <ZoneDecoration zone={zone} />
               </g>
             ))}
 
@@ -205,6 +297,17 @@ export function MapContainer({
                 strokeDasharray="6 3"
                 opacity={0.5}
               />
+            )}
+
+            {/* ──── DOOR ARCS ──── */}
+            {/* Entry door */}
+            <DoorArc x={14} y={55} radius={12} startAngle={0} endAngle={90} />
+            {/* Doors between amenity zones (approximate) */}
+            {zones.length > 2 && (
+              <>
+                <DoorArc x={zones[0].x + zones[0].width} y={zones[0].y + zones[0].height - 10} radius={10} startAngle={-90} endAngle={0} />
+                <DoorArc x={zones[1].x + zones[1].width} y={zones[1].y + zones[1].height - 10} radius={10} startAngle={-90} endAngle={0} />
+              </>
             )}
 
             {/* ──── SEATS ──── */}
