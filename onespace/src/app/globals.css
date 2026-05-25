@@ -1,0 +1,141 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono);
+  
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* CS Brand Colors */
+  --color-cs-red: var(--cs-red);
+  --color-cs-red-dark: var(--cs-red-dark);
+  --color-cs-red-bg: var(--cs-red-bg);
+  --color-cs-black: var(--cs-black);
+  --color-cs-dark: var(--cs-dark);
+  --color-cs-white: var(--cs-white);
+  --color-cs-gray-50: var(--cs-gray-50);
+  --color-cs-gray-100: var(--cs-gray-100);
+  --color-cs-gray-300: var(--cs-gray-300);
+  --color-cs-gray-500: var(--cs-gray-500);
+  --color-cs-gray-700: var(--cs-gray-700);
+
+  /* Hero Gradient */
+  --color-cs-hero-from: var(--cs-hero-from);
+  --color-cs-hero-to: var(--cs-hero-to);
+
+  /* Status Colors */
+  --color-status-green: var(--status-green);
+  --color-status-amber: var(--status-amber);
+  --color-status-red: var(--status-red);
+  --color-status-blue: var(--status-blue);
+  --color-status-gray: var(--status-gray);
+}
+
+:root {
+  /* Brand Constants */
+  --cs-red: #E8192C;
+  --cs-red-dark: #C0141F;
+  --cs-red-bg: #FFF1F2;
+  --cs-black: #1A1A1A;
+  --cs-dark: #111827;
+  --cs-white: #FFFFFF;
+  --cs-gray-50: #F8F9FA;
+  --cs-gray-100: #F1F3F5;
+  --cs-gray-300: #D1D5DB;
+  --cs-gray-500: #6B7280;
+  --cs-gray-700: #374151;
+  --cs-hero-from: #0D1B2A;
+  --cs-hero-to: #8B0000;
+  --status-green: #16A34A;
+  --status-amber: #D97706;
+  --status-red: #DC2626;
+  --status-blue: #2563EB;
+  --status-gray: #9CA3AF;
+
+  /* App Theme mapping */
+  --background: var(--cs-white);
+  --foreground: var(--cs-black);
+  --card: var(--cs-white);
+  --card-foreground: var(--cs-black);
+  --popover: var(--cs-white);
+  --popover-foreground: var(--cs-black);
+  
+  --primary: var(--cs-red);
+  --primary-foreground: var(--cs-white);
+  
+  --secondary: var(--cs-gray-100);
+  --secondary-foreground: var(--cs-red);
+  
+  --muted: var(--cs-gray-50);
+  --muted-foreground: var(--cs-gray-500);
+  
+  --accent: var(--cs-red-bg);
+  --accent-foreground: var(--cs-red);
+  
+  --destructive: var(--cs-red);
+  --destructive-foreground: var(--cs-white);
+  
+  --border: var(--cs-gray-300);
+  --input: var(--cs-gray-300);
+  --ring: var(--cs-red);
+  
+  --radius: 0.5rem;
+  
+  --sidebar: #0D1B2A;
+  --sidebar-foreground: var(--cs-white);
+  --sidebar-primary: var(--cs-red);
+  --sidebar-primary-foreground: var(--cs-white);
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: var(--cs-white);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: var(--cs-red);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
