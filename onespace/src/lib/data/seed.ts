@@ -54,19 +54,24 @@ export const members: Member[] = [
 
 export const leads: Lead[] = [
   {
-    id: "l1",
-    branchId: "b2",
-    name: "Sahil Gupta",
-    company: "EdTech Solutions",
-    email: "sahil@edtech.in",
-    phone: "+91 9876543212",
-    planType: "Cabin",
-    source: "Website",
-    stage: "new",
-    mrr: 22000,
-    assignedTo: "Arun",
-    createdAt: "2026-05-20T10:00:00Z"
-  }
+    id: "l1", branchId: "b2", name: "Sahil Gupta", company: "EdTech Solutions", 
+    email: "sahil@edtech.in", phone: "+91 9876543212", planType: "Cabin", 
+    source: "Website", stage: "new", mrr: 22000, assignedTo: "Arun", createdAt: "2026-05-20T10:00:00Z"
+  },
+  // 40% WhatsApp
+  { id: "l2", branchId: "b1", name: "Kavya Reddy", phone: "+91 9876543220", planType: "Flexi", source: "WhatsApp", stage: "new", createdAt: "2026-05-22T10:00:00Z" },
+  { id: "l3", branchId: "b2", name: "Rohit Sharma", phone: "+91 9876543221", planType: "Dedicated", source: "WhatsApp", stage: "toured", createdAt: "2026-05-18T10:00:00Z" },
+  { id: "l4", branchId: "b3", name: "Aditi Rao", phone: "+91 9876543222", planType: "Cabin", source: "WhatsApp", stage: "negotiating", createdAt: "2026-05-15T10:00:00Z" },
+  { id: "l5", branchId: "b4", name: "Vikas Patil", phone: "+91 9876543223", planType: "Day Pass", source: "WhatsApp", stage: "new", createdAt: "2026-05-24T10:00:00Z" },
+  // 30% Walk-in
+  { id: "l6", branchId: "b1", name: "Anjali Verma", company: "LegalEase Pvt Ltd", phone: "+91 9876543230", planType: "Dedicated", source: "Walk-in", stage: "toured", mrr: 15000, createdAt: "2026-05-23T10:00:00Z" },
+  { id: "l7", branchId: "b2", name: "Siddharth Jain", phone: "+91 9876543231", planType: "Flexi", source: "Walk-in", stage: "won", createdAt: "2026-05-10T10:00:00Z" },
+  { id: "l8", branchId: "b5", name: "Neha Gupta", phone: "+91 9876543232", planType: "Dedicated", source: "Walk-in", stage: "proposal", createdAt: "2026-05-20T10:00:00Z" },
+  // 20% Google Ads
+  { id: "l9", branchId: "b2", name: "Ritika Jain", company: "Freelance Design", phone: "+91 9876543240", planType: "Flexi", source: "Google Ads", stage: "new", mrr: 7999, createdAt: "2026-05-23T10:00:00Z" },
+  { id: "l10", branchId: "b3", name: "Varun Desai", phone: "+91 9876543241", planType: "Cabin", source: "Google Ads", stage: "lost", lossReason: "Too expensive", createdAt: "2026-05-05T10:00:00Z" },
+  // 10% Referral
+  { id: "l11", branchId: "b2", name: "Karan Mehta", company: "MarketPro Agency", phone: "+91 9876543250", planType: "Dedicated", source: "Referral", stage: "new", mrr: 12000, createdAt: "2026-05-22T10:00:00Z" },
 ];
 
 export const visitors: Visitor[] = [

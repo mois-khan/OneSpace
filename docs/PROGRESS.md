@@ -23,8 +23,8 @@ Total:                   ~17h     Achievable before deadline
 ## Phase 1 — Foundation
 **Goal:** App runs, sidebar shows, routing works, design tokens set.
 
-- [ ] `npx create-next-app@latest onespace --typescript --tailwind --app`
-- [ ] Install dependencies:
+- [x] `npx create-next-app@latest onespace --typescript --tailwind --app`
+- [x] Install dependencies:
   ```bash
   npm install @anthropic-ai/sdk lucide-react recharts 
   npm install framer-motion sonner react-zoom-pan-pinch
