@@ -2,8 +2,8 @@
 
 import { Seat } from "@/types";
 import { getMemberDisplayInfo } from "@/lib/data/floor-plan";
-import { X, User, Building2, CreditCard, MapPin, ArrowRight, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { X, User, Building2, CreditCard, MapPin, ArrowRight, AlertTriangle, Wrench, CalendarClock } from "lucide-react";
+import { cn, formatCurrency } from "@/lib/utils";
 
 interface SeatDetailsPanelProps {
   seat: Seat | null;
@@ -69,7 +69,7 @@ export function SeatDetailsPanel({ seat, onClose }: SeatDetailsPanelProps) {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-cs-gray-600">
                   <CreditCard className="w-3.5 h-3.5" />
-                  {memberInfo.plan === "Cabin" ? "₹22,000" : memberInfo.plan === "Dedicated" ? "₹12,000" : "₹7,999"}/mo
+                  {formatCurrency(memberInfo.mrr)}/mo
                 </div>
               </div>
             </div>

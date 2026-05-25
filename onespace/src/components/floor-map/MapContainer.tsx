@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useMemo } from "react";
+import React, { useState, useCallback } from "react";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import { Seat } from "@/types";
-import { Zone } from "@/lib/data/floor-plan";
+import { Zone, zoneIcons } from "@/lib/data/floor-plan";
 import { SeatNode } from "./SeatNode";
 
 interface MapContainerProps {
   zones: Zone[];
   seats: Seat[];
+  canvasWidth: number;
+  canvasHeight: number;
+  branchName: string;
+  address: string;
   selectedSeat: Seat | null;
   onSeatSelect: (seat: Seat) => void;
   onSeatsUpdate: (seats: Seat[]) => void;
@@ -23,9 +27,27 @@ function ControlsBridge({ controlsRef }: { controlsRef: React.MutableRefObject<a
   return null;
 }
 
+// Premium SVG icon renderer for zone labels
+function ZoneIcon({ type, x, y }: { type: Zone["type"]; x: number; y: number }) {
+  const path = zoneIcons[type];
+  if (!path) return null;
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      <rect x={-2} y={-2} width={18} height={18} rx={4} fill="#fff" opacity={0.7} />
+      <svg viewBox="0 0 24 24" width={14} height={14}>
+        <path d={path} fill="none" stroke="#6B7280" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </g>
+  );
+}
+
 export function MapContainer({
   zones,
   seats,
+  canvasWidth,
+  canvasHeight,
+  branchName,
+  address,
   selectedSeat,
   onSeatSelect,
   onSeatsUpdate,
@@ -43,21 +65,16 @@ export function MapContainer({
     [seats, onSeatsUpdate]
   );
 
-  // Calculate canvas bounds from zones
-  const canvasWidth = 860;
-  const canvasHeight = 580;
-
   return (
-    <div className="flex-1 bg-white rounded-xl border border-cs-gray-200 overflow-hidden relative shadow-sm">
-      {/* Grid pattern background */}
+    <div className="flex-1 rounded-xl border border-cs-gray-200 overflow-hidden relative shadow-sm" style={{ background: "linear-gradient(145deg, #FAFBFC 0%, #F1F5F9 100%)" }}>
       <TransformWrapper
         initialScale={1}
-        minScale={0.5}
-        maxScale={3}
+        minScale={0.4}
+        maxScale={4}
         centerOnInit
         onTransform={(ref) => setScale(ref.state.scale)}
         panning={{ excluded: [] }}
-        wheel={{ step: 0.08 }}
+        wheel={{ step: 0.06 }}
       >
         <ControlsBridge controlsRef={controlsRef} />
         <TransformComponent
@@ -70,91 +87,127 @@ export function MapContainer({
             viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
             className="select-none"
           >
-            {/* Background grid pattern */}
+            {/* ──── DEFS ──── */}
             <defs>
-              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#F1F5F9" strokeWidth="0.5" />
+              {/* Fine grid */}
+              <pattern id="grid-sm" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E8ECF1" strokeWidth="0.4" />
               </pattern>
-              <pattern id="grid-large" width="100" height="100" patternUnits="userSpaceOnUse">
-                <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#E2E8F0" strokeWidth="0.8" />
+              {/* Major grid */}
+              <pattern id="grid-lg" width="100" height="100" patternUnits="userSpaceOnUse">
+                <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#D5DCE5" strokeWidth="0.6" />
               </pattern>
+              {/* Drop shadow for zones */}
+              <filter id="zone-shadow" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.06" />
+              </filter>
+              {/* Glow for selected seat */}
+              <filter id="seat-glow">
+                <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#E8192C" floodOpacity="0.4" />
+              </filter>
+              {/* Entrance arrow marker */}
+              <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#22C55E" />
+              </marker>
             </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-            <rect width="100%" height="100%" fill="url(#grid-large)" />
 
-            {/* Outer wall */}
+            {/* ──── BACKGROUND ──── */}
+            <rect width="100%" height="100%" fill="#FAFBFC" />
+            <rect width="100%" height="100%" fill="url(#grid-sm)" />
+            <rect width="100%" height="100%" fill="url(#grid-lg)" />
+
+            {/* ──── OUTER WALL ──── */}
             <rect
-              x={12}
-              y={12}
-              width={canvasWidth - 24}
-              height={canvasHeight - 24}
-              rx={8}
+              x={14} y={14}
+              width={canvasWidth - 28}
+              height={canvasHeight - 28}
+              rx={10}
+              fill="none"
+              stroke="#94A3B8"
+              strokeWidth={2.5}
+            />
+            {/* Wall inner shadow line */}
+            <rect
+              x={16} y={16}
+              width={canvasWidth - 32}
+              height={canvasHeight - 32}
+              rx={9}
               fill="none"
               stroke="#CBD5E1"
-              strokeWidth={2}
-              strokeDasharray="none"
+              strokeWidth={0.8}
+              strokeDasharray="4 4"
+              opacity={0.5}
             />
 
-            {/* Zones */}
+            {/* ──── ENTRANCE ──── */}
+            <line x1={14} y1={55} x2={14} y2={95} stroke="#22C55E" strokeWidth={5} strokeLinecap="round" />
+            <line x1={2} y1={75} x2={14} y2={75} stroke="#22C55E" strokeWidth={1.5} markerEnd="url(#arrow)" />
+            <text x={4} y={105} fontSize={7} fill="#22C55E" fontWeight={700} fontFamily="Inter, sans-serif" style={{ userSelect: "none" }}>
+              ENTRY
+            </text>
+
+            {/* ──── ZONES ──── */}
             {zones.map((zone) => (
               <g key={zone.id}>
-                {/* Zone background */}
+                {/* Zone background with shadow */}
                 <rect
                   x={zone.x}
                   y={zone.y}
                   width={zone.width}
                   height={zone.height}
-                  rx={8}
+                  rx={10}
                   fill={zone.color}
-                  stroke="#D1D5DB"
+                  stroke={zone.borderColor}
+                  strokeWidth={1}
+                  filter="url(#zone-shadow)"
+                  opacity={0.85}
+                />
+                {/* Inner highlight */}
+                <rect
+                  x={zone.x + 1}
+                  y={zone.y + 1}
+                  width={zone.width - 2}
+                  height={zone.height - 2}
+                  rx={9}
+                  fill="none"
+                  stroke="#fff"
                   strokeWidth={0.8}
                   opacity={0.6}
                 />
+
                 {/* Zone label */}
                 <text
-                  x={zone.x + 10}
+                  x={zone.x + 28}
                   y={zone.y + 16}
-                  fill="#6B7280"
-                  fontSize={10}
+                  fill="#374151"
+                  fontSize={9.5}
                   fontWeight={600}
                   fontFamily="Inter, sans-serif"
+                  letterSpacing="0.02em"
                   style={{ userSelect: "none" }}
                 >
                   {zone.label}
                 </text>
 
-                {/* Zone type icon markers */}
-                {zone.type === "reception" && (
-                  <text x={zone.x + zone.width - 24} y={zone.y + 16} fontSize={12}>🏢</text>
-                )}
-                {zone.type === "pantry" && (
-                  <text x={zone.x + zone.width - 24} y={zone.y + 16} fontSize={12}>☕</text>
-                )}
-                {zone.type === "lounge" && (
-                  <text x={zone.x + zone.width - 24} y={zone.y + 16} fontSize={12}>🛋️</text>
-                )}
-                {zone.type === "conference" && (
-                  <text x={zone.x + zone.width - 24} y={zone.y + 16} fontSize={12}>📋</text>
-                )}
-                {zone.type === "phone_booth" && (
-                  <text x={zone.x + zone.width - 24} y={zone.y + 16} fontSize={12}>📞</text>
-                )}
-                {zone.type === "cabin" && zone.id === "z-mgr" && (
-                  <text x={zone.x + zone.width - 24} y={zone.y + 16} fontSize={12}>👔</text>
-                )}
+                {/* Premium SVG Icon */}
+                <ZoneIcon type={zone.type} x={zone.x + 8} y={zone.y + 5} />
               </g>
             ))}
 
-            {/* Wall details - doors */}
-            {/* Main entrance */}
-            <line x1={20} y1={60} x2={20} y2={90} stroke="#22C55E" strokeWidth={4} strokeLinecap="round" />
-            <text x={6} y={78} fontSize={8} fill="#22C55E" fontWeight={700} writingMode="tb" fontFamily="Inter">▶</text>
+            {/* ──── INTERNAL WALLS ──── */}
+            {/* Horizontal separator between top amenities and work areas */}
+            {zones.length > 3 && (
+              <line
+                x1={20} y1={zones[0].y + zones[0].height + 10}
+                x2={canvasWidth - 20} y2={zones[0].y + zones[0].height + 10}
+                stroke="#CBD5E1"
+                strokeWidth={0.6}
+                strokeDasharray="6 3"
+                opacity={0.5}
+              />
+            )}
 
-            {/* Internal doors between zones */}
-            <line x1={300} y1={180} x2={300} y2={200} stroke="#94A3B8" strokeWidth={3} strokeLinecap="round" />
-            <line x1={300} y1={360} x2={300} y2={380} stroke="#94A3B8" strokeWidth={3} strokeLinecap="round" />
-
-            {/* Seats */}
+            {/* ──── SEATS ──── */}
             {seats.map((seat) => (
               <SeatNode
                 key={seat.id}
@@ -166,21 +219,28 @@ export function MapContainer({
               />
             ))}
 
-            {/* Floor label watermark */}
+            {/* ──── WATERMARK ──── */}
             <text
               x={canvasWidth / 2}
-              y={canvasHeight - 8}
+              y={canvasHeight - 6}
               textAnchor="middle"
-              fill="#D1D5DB"
-              fontSize={10}
+              fill="#CBD5E1"
+              fontSize={9}
               fontFamily="Inter, sans-serif"
               fontWeight={500}
+              letterSpacing="0.05em"
+              style={{ userSelect: "none" }}
             >
-              CS Coworking — Floor Plan (Drag seats to reposition)
+              CS Coworking · {branchName} · {address}
             </text>
           </svg>
         </TransformComponent>
       </TransformWrapper>
+
+      {/* Scale indicator */}
+      <div className="absolute bottom-3 left-3 bg-white/80 backdrop-blur-sm border border-cs-gray-200 rounded-md px-2 py-1 text-[10px] font-mono text-cs-gray-500">
+        {Math.round(scale * 100)}%
+      </div>
     </div>
   );
 }
