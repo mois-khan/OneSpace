@@ -30,8 +30,8 @@ export default function LoginPage() {
 
   const handleDemoLogin = () => {
     setUser({
-      name: "Avinash Kumar",
-      email: "avinash.kumar@furdial.com",
+      name: "Abhijeet Navandar",
+      email: "abhijeet@cscoworkingspaces.com",
       role: "owner",
       roleLabel: "Owner",
       initials: "A",

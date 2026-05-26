@@ -27,8 +27,8 @@ interface PersonaPreset extends CurrentUser {
 const CROSS_ORG: PersonaPreset[] = [
   {
     personaId: "owner",
-    name: "Avinash Kumar",
-    email: "avinash.kumar@furdial.com",
+    name: "Abhijeet Navandar",
+    email: "abhijeet@cscoworkingspaces.com",
     role: "owner",
     roleLabel: "Owner",
     initials: "A",
