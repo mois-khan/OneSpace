@@ -1,9 +1,8 @@
 import React from "react";
-import Link from "next/link";
 import { Member } from "@/types";
 import { RiskBar } from "@/components/members/RiskBar";
 import { formatCurrency } from "@/lib/utils";
-import { MapPin, Briefcase, Calendar, CreditCard, MessageSquare } from "lucide-react";
+import { MapPin, Briefcase, Calendar, CreditCard } from "lucide-react";
 
 interface MemberCardProps {
   member: Member;
@@ -91,18 +90,6 @@ export function MemberCard({ member, branchName }: MemberCardProps) {
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="border-t border-cs-gray-100 p-3 grid grid-cols-3 gap-2 bg-cs-gray-50/50">
-        <Link href={`/members/${member.id}`} className="flex items-center justify-center py-1.5 text-xs font-medium text-cs-gray-700 hover:text-cs-black hover:bg-cs-gray-100 rounded-md transition-colors">
-          View
-        </Link>
-        <button className="flex items-center justify-center py-1.5 text-xs font-medium text-cs-gray-700 hover:text-cs-black hover:bg-cs-gray-100 rounded-md transition-colors">
-          Renew
-        </button>
-        <button className="flex items-center justify-center py-1.5 text-xs font-medium text-cs-gray-700 hover:text-cs-black hover:bg-cs-gray-100 rounded-md transition-colors">
-          Message
-        </button>
-      </div>
     </div>
   );
 }

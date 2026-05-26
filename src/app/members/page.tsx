@@ -12,7 +12,7 @@ export default function MembersPage() {
   const branches = useBranches();
   const [searchQuery, setSearchQuery] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   const filteredMembers = useMemo(() => {
