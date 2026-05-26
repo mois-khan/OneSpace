@@ -554,8 +554,8 @@ import type { CurrentUser } from "@/types";
 
 /** Default current user. */
 export const CURRENT_USER: CurrentUser = {
-  name: "Avinash Kumar",
-  email: "avinash.kumar@furdial.com",
+  name: "Abhijeet Navandar",
+  email: "abhijeet@cscoworkingspaces.com",
   role: "operations",
   roleLabel: "Operations Lead",
   initials: "A",
