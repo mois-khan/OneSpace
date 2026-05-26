@@ -6,9 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Seat } from "@/types";
 import { generateFloorPlan, FloorPlan } from "@/lib/data/floor-plan";
 import { useBranches, useBranch, useAppActions } from "@/lib/store";
+import type { OnboardMemberPayload } from "@/lib/store";
 import { MapControls, type ZoneCategory } from "@/components/floor-map/MapControls";
 import { MapContainer } from "@/components/floor-map/MapContainer";
 import { SeatDetailsPanel } from "@/components/floor-map/SeatDetailsPanel";
+import { toast } from "sonner";
 
 const ALL_CATEGORIES: ZoneCategory[] = ["hot_desk", "dedicated", "cabin", "meeting"];
 
@@ -51,6 +53,7 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
   const [visibleCategories, setVisibleCategories] = useState<Set<ZoneCategory>>(
     () => new Set(ALL_CATEGORIES),
   );
+  const { onboardMember } = useAppActions();
 
   const toggleCategory = useCallback((cat: ZoneCategory) => {
     setVisibleCategories((prev) => {
@@ -80,8 +83,6 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
 
   const handleBranchChange = useCallback(
     (id: string) => {
-      // Updating the global branch will re-mount this content via the parent's key,
-      // resetting seats / selection. No need to setState here directly.
       onBranchChange(id);
     },
     [onBranchChange],
@@ -90,6 +91,28 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
   const handleSeatSelect = useCallback((seat: Seat) => {
     setSelectedSeat((prev) => (prev?.id === seat.id ? null : seat));
   }, []);
+
+  const handleAssignSeat = useCallback(
+    (seatId: string, payload: OnboardMemberPayload) => {
+      // 1. Dispatch global store action
+      onboardMember(payload);
+
+      // 2. Update local seats state — mark seat as occupied
+      setSeats((prev) =>
+        prev.map((s) =>
+          s.id === seatId
+            ? { ...s, status: "occupied" as const, memberId: `m-ob-${Date.now()}` }
+            : s,
+        ),
+      );
+
+      // 3. Toast
+      toast.success(`${payload.name} onboarded to seat ${selectedSeat?.code || seatId}`, {
+        description: `${payload.planType} plan · ₹${(payload.monthlyFee / 1000).toFixed(0)}k/mo`,
+      });
+    },
+    [onboardMember, selectedSeat],
+  );
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem-3rem)] animate-in fade-in duration-500">
@@ -141,7 +164,9 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
             >
               <SeatDetailsPanel
                 seat={selectedSeat}
+                branchId={branchId}
                 onClose={() => setSelectedSeat(null)}
+                onAssignSeat={handleAssignSeat}
               />
             </motion.div>
           )}
@@ -150,3 +175,4 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
     </div>
   );
 }
+

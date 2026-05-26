@@ -33,6 +33,19 @@ import {
 } from "./generate";
 import type { AppState } from "./selectors";
 
+export interface OnboardMemberPayload {
+  name: string;
+  company?: string;
+  email: string;
+  phone: string;
+  planType: Member["planType"];
+  monthlyFee: number;
+  branchId: string;
+  seatId: string;
+  /** If set, the lead will be moved to "won" stage */
+  leadId?: string;
+}
+
 type Action =
   | { type: "SET_BRANCH"; branchId: string }
   | { type: "SET_USER"; user: CurrentUser }
@@ -49,6 +62,7 @@ type Action =
   | { type: "MARK_NOTIFICATION_READ"; id: string }
   | { type: "MARK_ALL_NOTIFICATIONS_READ" }
   | { type: "PAY_INVOICE"; id: string }
+  | { type: "ONBOARD_MEMBER"; payload: OnboardMemberPayload }
   | { type: "PUSH_NOTIFICATION"; payload: Omit<Notification, "id" | "read" | "timestamp"> & { timestamp?: number } }
   | { type: "PUSH_ACTIVITY"; payload: Omit<ActivityEvent, "id" | "timestamp"> & { timestamp?: number } };
 
@@ -418,6 +432,114 @@ function reducer(state: AppState, action: Action): AppState {
         ].slice(0, 80),
       };
 
+    case "ONBOARD_MEMBER": {
+      const p = action.payload;
+      const memberId = `m-ob-${Date.now()}`;
+      const contractStart = new Date(state.now).toISOString();
+      const contractEndDate = new Date(state.now);
+      contractEndDate.setMonth(contractEndDate.getMonth() + 12);
+      const contractEnd = contractEndDate.toISOString();
+
+      const newMember: Member = {
+        id: memberId,
+        branchId: p.branchId,
+        name: p.name,
+        email: p.email,
+        phone: p.phone,
+        company: p.company,
+        planType: p.planType,
+        monthlyFee: p.monthlyFee,
+        contractStart,
+        contractEnd,
+        status: "active",
+        seatId: p.seatId,
+        riskScore: 0,
+        tickets: [],
+        invoices: [],
+        memberSince: new Date(state.now).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+        monthsAsMember: 0,
+        daysSinceLastVisit: 0,
+        avgVisitsPerMonth: 0,
+      };
+
+      // Create a pending invoice for the new member
+      const newInvoice: Invoice = {
+        id: `inv-${memberId}-0`,
+        memberId,
+        branchId: p.branchId,
+        amount: p.monthlyFee,
+        status: "pending",
+        issuedAt: contractStart,
+        dueAt: new Date(state.now + 7 * DAY).toISOString(),
+      };
+
+      // If converting a lead, mark it as won
+      const leads = p.leadId
+        ? state.leads.map((l) =>
+            l.id === p.leadId ? { ...l, stage: "won" as Lead["stage"] } : l,
+          )
+        : state.leads;
+
+      const convertedLead = p.leadId ? state.leads.find((l) => l.id === p.leadId) : null;
+
+      const newActivity: ActivityEvent[] = [
+        {
+          id: `a-${activityCounter++}`,
+          timestamp: state.now,
+          type: "member_onboarded" as const,
+          message: `${p.name} onboarded${p.company ? ` (${p.company})` : ""} — ${p.planType} plan`,
+          link: `/members/${memberId}`,
+          branchId: p.branchId,
+        },
+      ];
+
+      if (convertedLead) {
+        newActivity.push({
+          id: `a-${activityCounter++}`,
+          timestamp: state.now,
+          type: "lead_moved" as const,
+          message: `Lead ${convertedLead.name} → won (onboarded)`,
+          link: `/leads`,
+          branchId: convertedLead.branchId,
+        });
+      }
+
+      const newNotifications: Notification[] = [
+        {
+          id: `n-${notificationCounter++}`,
+          type: "member_onboarded",
+          severity: "success",
+          message: `New member onboarded: ${p.name}${p.company ? ` (${p.company})` : ""} — ₹${(p.monthlyFee / 1000).toFixed(0)}k/mo`,
+          branchId: p.branchId,
+          link: `/members/${memberId}`,
+          timestamp: state.now,
+          read: false,
+        },
+      ];
+
+      if (convertedLead) {
+        newNotifications.push({
+          id: `n-${notificationCounter++}`,
+          type: "lead_won",
+          severity: "success",
+          message: `Lead won: ${convertedLead.name}${convertedLead.company ? ` (${convertedLead.company})` : ""}`,
+          branchId: convertedLead.branchId,
+          link: "/leads",
+          timestamp: state.now,
+          read: false,
+        });
+      }
+
+      return {
+        ...state,
+        members: [newMember, ...state.members],
+        invoices: [newInvoice, ...state.invoices],
+        leads,
+        activity: [...newActivity, ...state.activity].slice(0, 80),
+        notifications: [...newNotifications, ...state.notifications],
+      };
+    }
+
     default:
       return state;
   }
@@ -486,6 +608,8 @@ export function useAppActions() {
       markAllNotificationsRead: () =>
         dispatch({ type: "MARK_ALL_NOTIFICATIONS_READ" }),
       payInvoice: (id: string) => dispatch({ type: "PAY_INVOICE", id }),
+      onboardMember: (payload: OnboardMemberPayload) =>
+        dispatch({ type: "ONBOARD_MEMBER", payload }),
       pushNotification: (
         payload: Omit<Notification, "id" | "read" | "timestamp"> & { timestamp?: number },
       ) => dispatch({ type: "PUSH_NOTIFICATION", payload }),

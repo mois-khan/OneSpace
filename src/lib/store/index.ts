@@ -7,3 +7,4 @@ export type {
   FocusItem,
   SearchResult,
 } from "./selectors";
+export type { OnboardMemberPayload } from "./provider";

@@ -11,6 +11,7 @@ import type {
   Room,
   Visitor,
 } from "@/types";
+import { generateFloorPlan } from "@/lib/data/floor-plan";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -131,14 +132,13 @@ export function selectKpis(
     return days > 0 && days <= 30;
   }).length;
 
-  // Occupancy: average across selected branches' floor plans (via members + branches' totalSeats)
+  // Occupancy: use floor-plan seat data for consistency with floor map
   let occupancyPct = 0;
   if (branches.length > 0) {
     const occs = branches.map((b) => {
-      const branchMembers = s.members.filter((m) => m.branchId === b.id);
-      // Approximate seat count from member presence vs total seats
-      const total = b.totalSeats || 1;
-      const occupied = branchMembers.length;
+      const fp = generateFloorPlan(b.id);
+      const total = fp.seats.length || 1;
+      const occupied = fp.seats.filter((s) => s.status === "occupied").length;
       return Math.min(100, Math.round((occupied / total) * 100));
     });
     occupancyPct = Math.round(occs.reduce((a, b) => a + b, 0) / occs.length);
@@ -180,8 +180,11 @@ export function selectBranchPerformance(s: AppState): BranchPerformanceRow[] {
       (i) => i.branchId === b.id && i.status === "overdue",
     ).length;
     const mrr = members.reduce((acc, m) => acc + m.monthlyFee, 0);
-    const total = b.totalSeats || 1;
-    const occupancy = Math.min(100, Math.round((members.length / total) * 100));
+    // Use floor-plan seat data for occupancy consistency with floor map
+    const fp = generateFloorPlan(b.id);
+    const totalSeats = fp.seats.length || 1;
+    const occupiedSeats = fp.seats.filter((s) => s.status === "occupied").length;
+    const occupancy = Math.min(100, Math.round((occupiedSeats / totalSeats) * 100));
 
     const trend = s.occupancyTrend
       .slice(-14)
