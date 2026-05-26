@@ -28,6 +28,7 @@ import {
   useOccupancyTrend,
   useBranchRevenue,
 } from "@/lib/store";
+import { useCan } from "@/lib/rbac";
 
 const BRANCH_KEYS = [
   "CS Coworking - Hitech City",
@@ -43,6 +44,8 @@ export default function DashboardPage() {
   const kpis = useKpis();
   const trend = useOccupancyTrend();
   const revenue = useBranchRevenue();
+  const canSeeFinance = useCan("view_finance");
+  const canSeeRenewals = useCan("view_renewals");
 
   const occupancySpark = useMemo(() => {
     const keys =
@@ -88,24 +91,24 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-[1440px] mx-auto">
-      {/* § 1. Pulse Bar — 4 action signals (none duplicate the KPI cards) */}
+      {/* § 1. Pulse Bar — 4 action signals (gated by role permissions) */}
       <PulseBar
         chips={[
-          {
+          canSeeRenewals && {
             icon: CalendarClock,
             label: "Renewals ≤ 7 days",
             value: String(kpis.renewalsDueIn7Days),
             tone: pulseTone(kpis.renewalsDueIn7Days, 1, 5),
             href: "/renewals",
           },
-          {
+          canSeeFinance && {
             icon: FileWarning,
             label: "Overdue invoices",
             value: String(kpis.overdueInvoices),
             tone: pulseTone(kpis.overdueInvoices, 1, 3),
-            href: "/renewals",
+            href: canSeeRenewals ? "/renewals" : "/members",
           },
-          {
+          canSeeRenewals && {
             icon: TrendingDown,
             label: "High-risk members",
             value: String(kpis.highRiskCount),
@@ -119,13 +122,21 @@ export default function DashboardPage() {
             tone: "gray",
             href: "/visitors",
           },
-        ]}
+          // Community gets an extra occupancy-focused chip to fill space
+          !canSeeFinance && {
+            icon: Users,
+            label: "Active members",
+            value: String(kpis.activeMembers),
+            tone: "blue" as const,
+            href: "/members",
+          },
+        ].filter(Boolean) as Parameters<typeof PulseBar>[0]["chips"]}
       />
 
       {/* § 1b. AI insight banner — opens the assistant with a relevant prompt */}
-      <AiInsightBanner />
+      {canSeeRenewals && <AiInsightBanner />}
 
-      {/* § 2. Executive KPI Grid — the headline numbers */}
+      {/* § 2. Executive KPI Grid — the headline numbers (financial cards are RBAC-gated) */}
       <section>
         <SectionHeader
           eyebrow="Executive overview"
@@ -136,7 +147,11 @@ export default function DashboardPage() {
           initial="hidden"
           animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+          className={
+            canSeeFinance
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+              : "grid grid-cols-1 md:grid-cols-2 gap-4"
+          }
         >
           {[
             <KpiHeroCard
@@ -157,39 +172,51 @@ export default function DashboardPage() {
               cta="View floor map →"
               ctaLink="/floor-map"
             />,
-            <KpiHeroCard
-              key="mrr"
-              label="Monthly Revenue"
-              value={kpis.mrr}
-              isCurrency
-              sub="Active MRR"
-              trend="+4.1% MoM"
-              trendDirection="up"
-              icon={IndianRupee}
-              sparkData={revenueSpark}
-              cta="View members →"
-              ctaLink="/members"
-            />,
-            <KpiHeroCard
-              key="risk"
-              label="At-Risk Revenue"
-              value={kpis.atRiskMrr}
-              isCurrency
-              sub={`${kpis.highRiskCount} high-risk members`}
-              trend="Action required"
-              trendDirection="down"
-              icon={AlertTriangle}
-              cta="View renewals →"
-              ctaLink="/renewals"
-              sparkData={atRiskSpark}
-              sparkColor="var(--status-red)"
-            />,
+            canSeeFinance && (
+              <KpiHeroCard
+                key="mrr"
+                label="Monthly Revenue"
+                value={kpis.mrr}
+                isCurrency
+                sub="Active MRR"
+                trend="+4.1% MoM"
+                trendDirection="up"
+                icon={IndianRupee}
+                sparkData={revenueSpark}
+                cta="View members →"
+                ctaLink="/members"
+              />
+            ),
+            canSeeFinance && (
+              <KpiHeroCard
+                key="risk"
+                label="At-Risk Revenue"
+                value={kpis.atRiskMrr}
+                isCurrency
+                sub={`${kpis.highRiskCount} high-risk members`}
+                trend="Action required"
+                trendDirection="down"
+                icon={AlertTriangle}
+                cta={canSeeRenewals ? "View renewals →" : undefined}
+                ctaLink={canSeeRenewals ? "/renewals" : undefined}
+                sparkData={atRiskSpark}
+                sparkColor="var(--status-red)"
+              />
+            ),
             <KpiHeroCard
               key="members"
               label="Active Members"
               value={kpis.activeMembers}
-              sub={`${kpis.overdueInvoices} overdue invoice${kpis.overdueInvoices === 1 ? "" : "s"}`}
-              trend={`${kpis.renewalsDueIn30Days} renewals next 30d`}
+              sub={
+                canSeeFinance
+                  ? `${kpis.overdueInvoices} overdue invoice${kpis.overdueInvoices === 1 ? "" : "s"}`
+                  : "in this branch"
+              }
+              trend={
+                canSeeRenewals
+                  ? `${kpis.renewalsDueIn30Days} renewals next 30d`
+                  : `${kpis.visitorsToday} visitors today`
+              }
               trendDirection="up"
               icon={Users}
               sparkData={membersSpark}
@@ -197,7 +224,9 @@ export default function DashboardPage() {
               cta="View directory →"
               ctaLink="/members"
             />,
-          ].map((card, i) => (
+          ]
+            .filter(Boolean)
+            .map((card, i) => (
             <motion.div
               key={i}
               variants={{

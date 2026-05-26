@@ -93,8 +93,15 @@ let activityCounter = 1000;
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
-    case "SET_BRANCH":
+    case "SET_BRANCH": {
+      // Enforce branch lock at the store level — scoped roles cannot switch away
+      // from their assigned branch even if a UI somehow tries.
+      const scope = state.currentUser.branchScope;
+      if (scope !== "all" && action.branchId !== scope) {
+        return state;
+      }
       return { ...state, selectedBranchId: action.branchId };
+    }
 
     case "SET_USER": {
       // If new user is branch-scoped, also align the active branch filter.

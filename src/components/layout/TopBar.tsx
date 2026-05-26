@@ -61,25 +61,40 @@ export function TopBar() {
 
   return (
     <header className="h-14 bg-white border-b border-border px-6 flex items-center justify-between sticky top-0 z-30">
-      <div className="flex items-center gap-6">
-        <h1 className="text-lg font-semibold text-cs-black font-heading min-w-[120px]">
+      <div className="flex items-center gap-4">
+        <h1 className="text-lg font-semibold text-cs-black font-heading min-w-[100px]">
           {getPageTitle(pathname)}
         </h1>
 
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-cs-gray-50 border border-cs-gray-200 rounded-lg hover:border-cs-red/30 transition-colors">
-          <Building2 className="w-4 h-4 text-cs-gray-500" />
-          <select
-            value={selectedBranchId}
-            onChange={(e) => setBranch(e.target.value)}
-            className="bg-transparent text-sm font-medium text-cs-black focus:outline-none cursor-pointer appearance-none pr-4"
-          >
-            <option value="all">All Branches</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+        <div className="hidden md:flex items-center gap-2">
+          <RoleSwitcher />
+
+          {lockedBranch ? (
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cs-gray-50 border border-cs-gray-200 text-[12px] text-cs-gray-700"
+              title="Branch selection is locked by your role"
+            >
+              <Lock className="w-3 h-3 text-cs-gray-500" />
+              <span className="font-medium text-cs-black">{lockedBranch.name}</span>
+              <span className="text-cs-gray-500">locked</span>
+            </span>
+          ) : (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-cs-gray-50 border border-cs-gray-200 rounded-lg hover:border-cs-red/30 transition-colors">
+              <Building2 className="w-3.5 h-3.5 text-cs-gray-500" />
+              <select
+                value={selectedBranchId}
+                onChange={(e) => setBranch(e.target.value)}
+                className="bg-transparent text-[12px] font-medium text-cs-black focus:outline-none cursor-pointer appearance-none pr-3"
+              >
+                <option value="all">All Branches</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 

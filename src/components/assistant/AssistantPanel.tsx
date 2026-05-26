@@ -8,12 +8,11 @@ import {
   X,
   Send,
   Bot,
-  Settings2,
   Mail,
   RefreshCcw,
   LogIn,
-  ChevronDown,
   CornerDownLeft,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -24,7 +23,7 @@ import {
 } from "@/lib/store";
 import { buildChatSnapshot } from "@/lib/ai/snapshot";
 import type { SuggestedAction } from "@/lib/ai/tools";
-import type { CurrentUser, UserRole } from "@/types";
+import type { UserRole } from "@/types";
 
 interface AssistantPanelProps {
   open: boolean;
@@ -39,41 +38,6 @@ interface ChatMessage {
   /** When true, the message is a transient streaming placeholder. */
   pending?: boolean;
 }
-
-const ROLE_PRESETS: CurrentUser[] = [
-  {
-    name: "Avinash Kumar",
-    email: "avinash.kumar@furdial.com",
-    role: "owner",
-    roleLabel: "Owner",
-    initials: "A",
-    branchScope: "all",
-  },
-  {
-    name: "Avinash Kumar",
-    email: "avinash.kumar@furdial.com",
-    role: "operations",
-    roleLabel: "Operations Lead",
-    initials: "A",
-    branchScope: "all",
-  },
-  {
-    name: "Priya Mehta",
-    email: "priya@onespace.in",
-    role: "branch_manager",
-    roleLabel: "Branch Manager · Gachibowli",
-    initials: "P",
-    branchScope: "b2",
-  },
-  {
-    name: "Neha Sharma",
-    email: "neha@onespace.in",
-    role: "community",
-    roleLabel: "Community Manager · Raidurg",
-    initials: "N",
-    branchScope: "b3",
-  },
-];
 
 const STARTER_PROMPTS: Record<UserRole, string[]> = {
   owner: [
@@ -102,12 +66,11 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
   const router = useRouter();
   const state = useAppState();
   const currentUser = useCurrentUser();
-  const { setUser, renewMember } = useAppActions();
+  const { renewMember } = useAppActions();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const idCounterRef = useRef(0);
   const nextId = (prefix: string) => `${prefix}-${++idCounterRef.current}`;
@@ -231,13 +194,6 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
     }
   };
 
-  const switchRole = (preset: CurrentUser) => {
-    setUser(preset);
-    setShowRoleMenu(false);
-    setMessages([]);
-    toast.info(`Now acting as ${preset.roleLabel}`);
-  };
-
   return (
     <AnimatePresence>
       {open && (
@@ -277,15 +233,10 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
                     <div className="text-[14px] font-semibold text-cs-black font-heading">
                       OneSpace Assistant
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowRoleMenu((s) => !s)}
-                      className="flex items-center gap-1 text-[11px] text-cs-gray-500 hover:text-cs-black transition-colors"
-                    >
-                      <Settings2 className="w-3 h-3" />
-                      {currentUser.roleLabel}
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
+                    <div className="flex items-center gap-1 text-[11px] text-cs-gray-500">
+                      <ShieldCheck className="w-3 h-3 text-cs-gray-500" />
+                      Scoped to <span className="text-cs-black font-medium">{currentUser.roleLabel}</span>
+                    </div>
                   </div>
                 </div>
                 <button
@@ -298,43 +249,12 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
                 </button>
               </div>
 
-              {showRoleMenu && (
-                <div className="absolute left-4 right-4 top-full mt-2 bg-white rounded-xl shadow-[0_16px_40px_-12px_rgba(17,24,39,0.18)] ring-1 ring-cs-gray-300/60 z-10 overflow-hidden">
-                  <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-cs-gray-500 border-b border-cs-gray-100 bg-cs-gray-50/60">
-                    Switch role (demo)
-                  </div>
-                  {ROLE_PRESETS.map((preset) => (
-                    <button
-                      key={`${preset.role}-${preset.branchScope}`}
-                      type="button"
-                      onClick={() => switchRole(preset)}
-                      className={cn(
-                        "w-full px-3 py-2 flex items-center justify-between text-left text-[13px] hover:bg-cs-gray-50 transition-colors",
-                        preset.role === currentUser.role &&
-                          preset.branchScope === currentUser.branchScope
-                          ? "bg-cs-red-bg/40"
-                          : "",
-                      )}
-                    >
-                      <span>
-                        <div className="font-medium text-cs-black">{preset.roleLabel}</div>
-                        <div className="text-[11px] text-cs-gray-500">{preset.name}</div>
-                      </span>
-                      {preset.role === currentUser.role &&
-                        preset.branchScope === currentUser.branchScope && (
-                          <span className="text-[10px] font-semibold text-cs-red">ACTIVE</span>
-                        )}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Messages */}
             <div
               ref={scrollRef}
               className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
-              onClick={() => showRoleMenu && setShowRoleMenu(false)}
             >
               {messages.length === 0 && (
                 <div className="space-y-4">
