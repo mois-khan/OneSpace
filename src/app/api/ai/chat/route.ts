@@ -137,10 +137,19 @@ export async function POST(request: Request) {
   const branchLock = body.user.branchScope;
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    systemInstruction: buildSystemPrompt(body),
-    tools: [{ functionDeclarations: buildFunctionDeclarations(body.user.role) }],
+  const systemInstruction = buildSystemPrompt(body);
+  const tools = [{ functionDeclarations: buildFunctionDeclarations(body.user.role) }];
+
+  const primaryModel = genAI.getGenerativeModel({
+    model: "gemini-3.1-flash-lite",
+    systemInstruction,
+    tools,
+  });
+
+  const fallbackModel = genAI.getGenerativeModel({
+    model: "gemini-3.5-flash",
+    systemInstruction,
+    tools,
   });
 
   // Convert message history into Gemini's format. The trailing user message
@@ -157,11 +166,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const chat = model.startChat({ history });
-
   const suggestions: SuggestedAction[] = [];
 
-  try {
+  const attemptChat = async (modelInstance: ReturnType<typeof genAI.getGenerativeModel>) => {
+    const chat = modelInstance.startChat({ history });
     let pendingInput: string | Part[] = lastUser.content;
     let response;
 
@@ -208,8 +216,17 @@ export async function POST(request: Request) {
 
       pendingInput = responseParts;
     }
+    return response?.text() || "";
+  };
 
-    const text = response?.text() || "";
+  try {
+    let text = "";
+    try {
+      text = await attemptChat(primaryModel);
+    } catch (primaryError) {
+      console.warn("Primary model failed, falling back to gemini-3.5-flash", primaryError);
+      text = await attemptChat(fallbackModel);
+    }
 
     return NextResponse.json({
       message: { role: "assistant", content: text.trim() },

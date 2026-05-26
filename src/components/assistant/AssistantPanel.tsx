@@ -24,6 +24,7 @@ import {
 import { buildChatSnapshot } from "@/lib/ai/snapshot";
 import type { SuggestedAction } from "@/lib/ai/tools";
 import type { UserRole } from "@/types";
+import ReactMarkdown from "react-markdown";
 
 interface AssistantPanelProps {
   open: boolean;
@@ -333,7 +334,7 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
                   <span className="text-cs-gray-300 mx-1">·</span>
                   Shift+↵ newline
                 </span>
-                <span>Powered by Gemini 2.5</span>
+                <span>Powered by Gemini 3.1 Flash Lite</span>
               </div>
             </div>
           </motion.div>
@@ -373,7 +374,23 @@ function MessageBubble({
               : "bg-cs-gray-50 border border-cs-gray-100 text-cs-black rounded-tl-sm",
           )}
         >
-          {message.pending ? <PendingDots /> : message.content || "(empty response)"}
+          {message.pending ? (
+            <PendingDots />
+          ) : message.content ? (
+            <ReactMarkdown
+              components={{
+                ul: ({ node, ...props }) => <ul className="list-disc pl-4 space-y-1 mb-2" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal pl-4 space-y-1 mb-2" {...props} />,
+                li: ({ node, ...props }) => <li {...props} />,
+                p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          ) : (
+            "(empty response)"
+          )}
         </div>
 
         {message.suggestions && message.suggestions.length > 0 && (
