@@ -7,6 +7,7 @@ import type {
   Lead,
   Member,
   Notification,
+  PreRegistration,
   Room,
   Visitor,
 } from "@/types";
@@ -18,6 +19,7 @@ export interface AppState {
   members: Member[];
   leads: Lead[];
   visitors: Visitor[];
+  preRegistrations: PreRegistration[];
   bookings: Booking[];
   rooms: Room[];
   invoices: Invoice[];
@@ -50,6 +52,17 @@ export const selectLeads = (s: AppState, branchId: string = s.selectedBranchId) 
 
 export const selectVisitors = (s: AppState, branchId: string = s.selectedBranchId) =>
   filterByBranch(s.visitors, branchId);
+
+export const selectPreRegistrations = (
+  s: AppState,
+  branchId: string = s.selectedBranchId,
+) => filterByBranch(s.preRegistrations, branchId);
+
+/** Visit history for a given phone number across the whole company (not branch-filtered). */
+export const selectVisitHistoryByPhone = (s: AppState, phone: string) =>
+  s.visitors
+    .filter((v) => v.phone === phone)
+    .sort((a, b) => b.checkInAt.localeCompare(a.checkInAt));
 
 export const selectBookings = (s: AppState, roomId?: string) =>
   roomId ? s.bookings.filter((b) => b.roomId === roomId) : s.bookings;

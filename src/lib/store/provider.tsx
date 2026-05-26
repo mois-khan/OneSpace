@@ -14,6 +14,7 @@ import type {
   Lead,
   Member,
   Notification,
+  PreRegistration,
   Visitor,
 } from "@/types";
 import {
@@ -26,6 +27,7 @@ import {
   generateMembers,
   generateNotifications,
   generateOccupancyTrend,
+  generatePreRegistrations,
   generateRooms,
   generateVisitors,
 } from "./generate";
@@ -36,6 +38,9 @@ type Action =
   | { type: "SET_USER"; user: CurrentUser }
   | { type: "CHECK_IN_VISITOR"; payload: Omit<Visitor, "id" | "checkInAt" | "qrCode"> }
   | { type: "CHECK_OUT_VISITOR"; id: string }
+  | { type: "ADD_PRE_REGISTRATION"; payload: Omit<PreRegistration, "id" | "inviteCode" | "createdAt" | "status"> }
+  | { type: "CANCEL_PRE_REGISTRATION"; id: string }
+  | { type: "CONVERT_PRE_REGISTRATION"; id: string }
   | { type: "RENEW_MEMBER"; memberId: string; months?: number }
   | { type: "MOVE_LEAD"; leadId: string; stage: Lead["stage"] }
   | { type: "ADD_LEAD"; payload: Omit<Lead, "id" | "createdAt"> }
@@ -58,6 +63,7 @@ function buildInitialState(now: number): AppState {
   }
   const leads = generateLeads(now);
   const visitors = generateVisitors(now);
+  const preRegistrations = generatePreRegistrations(now);
   const rooms = generateRooms();
   const bookings = generateBookings(now);
   const notifications = generateNotifications(now, members, invoices, visitors, leads);
@@ -69,6 +75,7 @@ function buildInitialState(now: number): AppState {
     members,
     leads,
     visitors,
+    preRegistrations,
     bookings,
     rooms,
     invoices,
@@ -117,6 +124,75 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         visitors: [newVisitor, ...state.visitors],
+        activity: [activity, ...state.activity].slice(0, 80),
+      };
+    }
+
+    case "ADD_PRE_REGISTRATION": {
+      const id = `preg-${Date.now()}`;
+      // Short, human-friendly invite code
+      const rnd = Math.random().toString(36).slice(2, 6).toUpperCase();
+      const inviteCode = `OS-${rnd}`;
+      const preReg: PreRegistration = {
+        id,
+        inviteCode,
+        status: "pending",
+        createdAt: new Date(state.now).toISOString(),
+        ...action.payload,
+      };
+      const activity: ActivityEvent = {
+        id: `a-${activityCounter++}`,
+        timestamp: state.now,
+        type: "visitor_checkin" as const,
+        message: `Pre-registered: ${preReg.visitorName} for ${preReg.hostName}`,
+        link: "/visitors",
+        branchId: preReg.branchId,
+      };
+      return {
+        ...state,
+        preRegistrations: [preReg, ...state.preRegistrations],
+        activity: [activity, ...state.activity].slice(0, 80),
+      };
+    }
+
+    case "CANCEL_PRE_REGISTRATION": {
+      return {
+        ...state,
+        preRegistrations: state.preRegistrations.map((p) =>
+          p.id === action.id ? { ...p, status: "cancelled" as const } : p,
+        ),
+      };
+    }
+
+    case "CONVERT_PRE_REGISTRATION": {
+      const preReg = state.preRegistrations.find((p) => p.id === action.id);
+      if (!preReg) return state;
+      const visitorId = `v-${Date.now()}`;
+      const newVisitor: Visitor = {
+        id: visitorId,
+        branchId: preReg.branchId,
+        name: preReg.visitorName,
+        phone: preReg.phone,
+        purpose: preReg.purpose,
+        hostName: preReg.hostName,
+        qrCode: preReg.inviteCode,
+        checkInAt: new Date(state.now).toISOString(),
+        preRegistrationId: preReg.id,
+      };
+      const activity: ActivityEvent = {
+        id: `a-${activityCounter++}`,
+        timestamp: state.now,
+        type: "visitor_checkin" as const,
+        message: `${newVisitor.name} self-checked-in via invite ${preReg.inviteCode}`,
+        link: "/visitors",
+        branchId: newVisitor.branchId,
+      };
+      return {
+        ...state,
+        visitors: [newVisitor, ...state.visitors],
+        preRegistrations: state.preRegistrations.map((p) =>
+          p.id === action.id ? { ...p, status: "arrived" as const } : p,
+        ),
         activity: [activity, ...state.activity].slice(0, 80),
       };
     }
@@ -382,6 +458,13 @@ export function useAppActions() {
       checkInVisitor: (payload: Omit<Visitor, "id" | "checkInAt" | "qrCode">) =>
         dispatch({ type: "CHECK_IN_VISITOR", payload }),
       checkOutVisitor: (id: string) => dispatch({ type: "CHECK_OUT_VISITOR", id }),
+      addPreRegistration: (
+        payload: Omit<PreRegistration, "id" | "inviteCode" | "createdAt" | "status">,
+      ) => dispatch({ type: "ADD_PRE_REGISTRATION", payload }),
+      cancelPreRegistration: (id: string) =>
+        dispatch({ type: "CANCEL_PRE_REGISTRATION", id }),
+      convertPreRegistration: (id: string) =>
+        dispatch({ type: "CONVERT_PRE_REGISTRATION", id }),
       renewMember: (memberId: string, months = 12) =>
         dispatch({ type: "RENEW_MEMBER", memberId, months }),
       moveLead: (leadId: string, stage: Lead["stage"]) =>

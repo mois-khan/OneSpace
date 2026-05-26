@@ -12,11 +12,13 @@ import {
   selectLeads,
   selectMembers,
   selectNotifications,
+  selectPreRegistrations,
   selectRenewalsDue,
   selectRooms,
   selectSearch,
   selectTodayFocus,
   selectUnreadNotificationCount,
+  selectVisitHistoryByPhone,
   selectVisitors,
 } from "./selectors";
 import { useAppState } from "./provider";
@@ -54,6 +56,16 @@ export function useLeads(branchId?: string) {
 export function useVisitors(branchId?: string) {
   const s = useAppState();
   return useMemo(() => selectVisitors(s, branchId), [s, branchId]);
+}
+
+export function usePreRegistrations(branchId?: string) {
+  const s = useAppState();
+  return useMemo(() => selectPreRegistrations(s, branchId), [s, branchId]);
+}
+
+export function useVisitHistory(phone: string) {
+  const s = useAppState();
+  return useMemo(() => selectVisitHistoryByPhone(s, phone), [s, phone]);
 }
 
 export function useRooms(branchId?: string) {

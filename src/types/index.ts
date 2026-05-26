@@ -86,6 +86,24 @@ export interface Visitor {
   qrCode: string;
   checkInAt: string;
   checkOutAt?: string;
+  /** ID of the pre-registration this visitor came from, if any. */
+  preRegistrationId?: string;
+}
+
+/** A pre-registered visitor invitation — host sends this before the visitor arrives. */
+export interface PreRegistration {
+  id: string;
+  branchId: string;
+  visitorName: string;
+  phone: string;
+  purpose: string;
+  hostName: string;
+  /** Short alphanumeric code embedded in the invite QR (e.g., "OS-X7K4") */
+  inviteCode: string;
+  /** ISO string of when the visit is expected */
+  scheduledFor: string;
+  status: "pending" | "arrived" | "cancelled" | "expired";
+  createdAt: string;
 }
 
 export interface Booking {

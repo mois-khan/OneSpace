@@ -1,16 +1,21 @@
 "use client";
 
-import { StatCards } from "@/components/visitors/StatCards";
-import { VisitorTable } from "@/components/visitors/VisitorTable";
-import { CheckInPanel } from "@/components/visitors/CheckInPanel";
+import { useState } from "react";
 import { FileText, Download } from "lucide-react";
-import { useVisitors, useBranch, useAppActions } from "@/lib/store";
+import { LiveArrivalsTicker } from "@/components/visitors/LiveArrivalsTicker";
+import { VisitorKpiStrip } from "@/components/visitors/VisitorKpiStrip";
+import { VisitorLog } from "@/components/visitors/VisitorLog";
+import { VisitorDetailPanel } from "@/components/visitors/VisitorDetailPanel";
+import { PreRegistrationQueue } from "@/components/visitors/PreRegistrationQueue";
+import { CheckInPanel } from "@/components/visitors/CheckInPanel";
+import { useBranch, useAppActions } from "@/lib/store";
+import type { Visitor } from "@/types";
 import { toast } from "sonner";
 
 export default function VisitorsPage() {
-  const visitors = useVisitors();
-  const { selectedBranchId } = useBranch();
-  const { checkInVisitor, checkOutVisitor } = useAppActions();
+  const { selectedBranchId, selectedBranch } = useBranch();
+  const { checkInVisitor } = useAppActions();
+  const [activeVisitor, setActiveVisitor] = useState<Visitor | null>(null);
 
   const handleCheckIn = (data: { name: string; phone: string; purpose: string; hostName: string }) => {
     checkInVisitor({
@@ -23,48 +28,51 @@ export default function VisitorsPage() {
     toast.success(`${data.name} checked in`);
   };
 
-  const handleCheckOut = (id: string) => {
-    const v = visitors.find((x) => x.id === id);
-    checkOutVisitor(id);
-    if (v) toast.success(`${v.name} checked out`);
-  };
-
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] animate-in fade-in duration-500 bg-cs-gray-50/30 overflow-auto p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-[1440px] mx-auto animate-in fade-in duration-300">
+      <div className="mb-5 flex items-baseline justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold font-heading text-cs-black">Front Desk</h1>
           <p className="text-sm text-cs-gray-500 mt-1">
-            {visitors.length} visitor{visitors.length === 1 ? "" : "s"} in scope today. Check-ins flow to the dashboard live.
+            Smart visitor management with QR pre-registration, kiosk self-check-in, and per-visitor history.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {selectedBranch && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cs-red-bg text-cs-red text-[12px] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-cs-red" />
+              Scoped to {selectedBranch.name}
+            </span>
+          )}
           <button
+            type="button"
             onClick={() => toast.info("Export not yet built")}
-            className="px-4 py-2 bg-white border border-cs-gray-200 rounded-lg text-sm font-medium text-cs-gray-700 hover:bg-cs-gray-50 transition-colors flex items-center gap-2 shadow-sm"
+            className="px-3 py-1.5 bg-white border border-cs-gray-200 rounded-lg text-[12px] font-medium text-cs-gray-700 hover:bg-cs-gray-50 transition-colors flex items-center gap-1.5"
           >
-            <FileText className="w-4 h-4" /> Export Log
+            <FileText className="w-3.5 h-3.5" /> Export
           </button>
           <button
-            onClick={() => toast.info("Badge PDF not yet built")}
-            className="px-4 py-2 bg-white border border-cs-gray-200 rounded-lg text-sm font-medium text-cs-gray-700 hover:bg-cs-gray-50 transition-colors flex items-center gap-2 shadow-sm"
+            type="button"
+            onClick={() => toast.info("Badge PDF coming in V2")}
+            className="px-3 py-1.5 bg-white border border-cs-gray-200 rounded-lg text-[12px] font-medium text-cs-gray-700 hover:bg-cs-gray-50 transition-colors flex items-center gap-1.5"
           >
-            <Download className="w-4 h-4" /> Download Badges
+            <Download className="w-3.5 h-3.5" /> Badges
           </button>
         </div>
       </div>
 
-      <StatCards visitors={visitors} />
+      <LiveArrivalsTicker />
+      <VisitorKpiStrip />
+      <PreRegistrationQueue />
 
-      <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
-        <div className="flex-1 lg:w-[65%] min-h-0 flex flex-col">
-          <VisitorTable visitors={visitors} onCheckOut={handleCheckOut} />
-        </div>
-
-        <div className="lg:w-[35%] w-full lg:min-w-[320px] lg:max-w-[400px] flex-shrink-0 min-h-0 flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
+        <VisitorLog onSelectVisitor={setActiveVisitor} />
+        <div>
           <CheckInPanel onCheckIn={handleCheckIn} />
         </div>
       </div>
+
+      <VisitorDetailPanel visitor={activeVisitor} onClose={() => setActiveVisitor(null)} />
     </div>
   );
 }

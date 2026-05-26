@@ -8,7 +8,8 @@ import { AssistantRoot } from "@/components/assistant/AssistantRoot";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (pathname === "/login") {
+  // Standalone routes — no sidebar / topbar / assistant
+  if (pathname === "/login" || pathname.startsWith("/checkin")) {
     return <>{children}</>;
   }
 

@@ -8,6 +8,7 @@ import type {
   Invoice,
   Notification,
   ActivityEvent,
+  PreRegistration,
 } from "@/types";
 import { generateFloorPlan } from "@/lib/data/floor-plan";
 import { hashSeed, intBetween, makeRng, pick } from "./rng";
@@ -252,6 +253,49 @@ export function generateVisitors(now: number): Visitor[] {
     { id: "v-5", branchId: "b2", name: "Arvind Patil", phone: "+91 54321 09876", purpose: "Delivery", hostName: "Reception", qrCode: "qr-1005", checkInAt: offset(540) },
     { id: "v-6", branchId: "b1", name: "Suresh Banerjee", phone: "+91 90876 54321", purpose: "Client meeting", hostName: "Arun Sharma", qrCode: "qr-1006", checkInAt: offset(30) },
     { id: "v-7", branchId: "b3", name: "Maya Iyer", phone: "+91 87123 45678", purpose: "Interview", hostName: "Deepika Nair", qrCode: "qr-1007", checkInAt: offset(95) },
+  ];
+}
+
+/** Generate a few pending pre-registrations expected throughout the day. */
+export function generatePreRegistrations(now: number): PreRegistration[] {
+  const futureOffset = (mins: number) => new Date(now + mins * 60 * 1000).toISOString();
+  return [
+    {
+      id: "preg-1",
+      branchId: "b2",
+      visitorName: "Ananya Verma",
+      phone: "+91 99887 12340",
+      purpose: "Client meeting",
+      hostName: "Priya Mehta",
+      inviteCode: "OS-V8K2",
+      scheduledFor: futureOffset(45),
+      status: "pending",
+      createdAt: new Date(now - 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "preg-2",
+      branchId: "b2",
+      visitorName: "Rohan Kapoor",
+      phone: "+91 99887 12341",
+      purpose: "Interview",
+      hostName: "Ravi Kumar",
+      inviteCode: "OS-J3L9",
+      scheduledFor: futureOffset(120),
+      status: "pending",
+      createdAt: new Date(now - 30 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "preg-3",
+      branchId: "b1",
+      visitorName: "Megha Saxena",
+      phone: "+91 99887 12342",
+      purpose: "Demo",
+      hostName: "Arun Sharma",
+      inviteCode: "OS-T6Q1",
+      scheduledFor: futureOffset(180),
+      status: "pending",
+      createdAt: new Date(now - 15 * 60 * 1000).toISOString(),
+    },
   ];
 }
 
