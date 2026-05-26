@@ -1,19 +1,27 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { RoomSelector } from "@/components/bookings/RoomSelector";
 import { DayCalendar } from "@/components/bookings/DayCalendar";
 import { QuickBookPanel } from "@/components/bookings/QuickBookPanel";
-import { useRooms, useAllBookings, useAppActions, useNow } from "@/lib/store";
+import { BookingDetailPanel } from "@/components/bookings/BookingDetailPanel";
+import {
+  useRooms,
+  useAllBookings,
+  useAppActions,
+  useNow,
+} from "@/lib/store";
 import type { Booking } from "@/types";
 import { toast } from "sonner";
+
+type PanelMode = "closed" | "create" | "view";
 
 export default function BookingsPage() {
   const filteredRooms = useRooms();
   const allBookings = useAllBookings();
   const now = useNow();
-  const { createBooking } = useAppActions();
+  const { createBooking, cancelBooking } = useAppActions();
 
   // Raw selection; the resolved id below falls back to the first valid room
   // so the selection is always valid even after the branch changes.
@@ -27,8 +35,9 @@ export default function BookingsPage() {
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date(now));
 
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [panelMode, setPanelMode] = useState<PanelMode>("closed");
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
   const selectedRoom = useMemo(
     () => filteredRooms.find((r) => r.id === selectedRoomId) || filteredRooms[0],
@@ -40,20 +49,58 @@ export default function BookingsPage() {
     [allBookings, selectedRoomId],
   );
 
+  /** Rooms with a confirmed booking that spans `now` — feeds the live availability dot. */
+  const bookedNow = useMemo<Set<string>>(() => {
+    const set = new Set<string>();
+    for (const b of allBookings) {
+      if (b.status !== "confirmed") continue;
+      const s = new Date(b.startTime).getTime();
+      const e = new Date(b.endTime).getTime();
+      if (now >= s && now < e) set.add(b.roomId);
+    }
+    return set;
+  }, [allBookings, now]);
+
+  const selectedBooking = useMemo(
+    () => allBookings.find((b) => b.id === selectedBookingId) || null,
+    [allBookings, selectedBookingId],
+  );
+
   const handleSlotClick = (time: Date) => {
     setSelectedTime(time);
-    setIsPanelOpen(true);
+    setSelectedBookingId(null);
+    setPanelMode("create");
   };
 
   const handleBookingClick = (booking: Booking) => {
-    toast.info(`${booking.purpose || "Booking"} — ${booking.guestName || "Guest"}`);
+    setSelectedBookingId(booking.id);
+    setPanelMode("view");
   };
 
   const handleBook = (newBooking: Omit<Booking, "id">) => {
     createBooking(newBooking);
-    const sTime = new Date(newBooking.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-    const eTime = new Date(newBooking.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    const sTime = new Date(newBooking.startTime).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    const eTime = new Date(newBooking.endTime).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
     toast.success(`${selectedRoom?.name || "Room"} booked for ${sTime}–${eTime}`);
+    closePanel();
+  };
+
+  const handleCancel = (id: string) => {
+    cancelBooking(id);
+    toast.success("Booking cancelled");
+    closePanel();
+  };
+
+  const closePanel = () => {
+    setPanelMode("closed");
+    setSelectedTime(null);
+    setSelectedBookingId(null);
   };
 
   const handlePrevDay = () => setSelectedDate((d) => new Date(d.getTime() - 86400000));
@@ -64,7 +111,9 @@ export default function BookingsPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] text-center px-6">
         <h2 className="text-lg font-semibold text-cs-black mb-1">No rooms in this branch</h2>
-        <p className="text-sm text-cs-gray-500">Switch to &ldquo;All Branches&rdquo; or pick a branch with rooms.</p>
+        <p className="text-sm text-cs-gray-500">
+          Switch to &ldquo;All Branches&rdquo; or pick a branch with rooms.
+        </p>
       </div>
     );
   }
@@ -76,7 +125,7 @@ export default function BookingsPage() {
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold font-heading text-cs-black">Room Bookings</h1>
             <p className="text-sm text-cs-gray-500 mt-1 truncate">
-              Manage conference rooms and phone booths.
+              Conference rooms and phone booths · live availability · click any block for details.
             </p>
           </div>
 
@@ -85,6 +134,7 @@ export default function BookingsPage() {
               <button
                 onClick={handlePrevDay}
                 className="p-1.5 hover:bg-cs-gray-100 rounded-md transition-colors text-cs-gray-700"
+                aria-label="Previous day"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -102,6 +152,7 @@ export default function BookingsPage() {
               <button
                 onClick={handleNextDay}
                 className="p-1.5 hover:bg-cs-gray-100 rounded-md transition-colors text-cs-gray-700"
+                aria-label="Next day"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -120,6 +171,7 @@ export default function BookingsPage() {
             rooms={filteredRooms}
             selectedRoomId={selectedRoomId}
             onSelectRoom={setSelectedRoomId}
+            bookedNow={bookedNow}
           />
         </div>
 
@@ -127,28 +179,43 @@ export default function BookingsPage() {
           <DayCalendar
             bookings={roomBookings}
             selectedDate={selectedDate}
+            selectedBookingId={selectedBookingId}
             onSlotClick={handleSlotClick}
             onBookingClick={handleBookingClick}
           />
         </div>
       </div>
 
-      {isPanelOpen ? (
+      {panelMode === "create" && (
         <QuickBookPanel
+          key={selectedTime?.toISOString() || "create"}
           room={selectedRoom}
           selectedTime={selectedTime}
           existingBookings={allBookings}
           onBook={handleBook}
-          onClose={() => setIsPanelOpen(false)}
+          onClose={closePanel}
         />
-      ) : (
+      )}
+
+      {panelMode === "view" && selectedBooking && (
+        <BookingDetailPanel
+          key={selectedBooking.id}
+          booking={selectedBooking}
+          room={filteredRooms.find((r) => r.id === selectedBooking.roomId) || null}
+          onCancel={handleCancel}
+          onClose={closePanel}
+        />
+      )}
+
+      {panelMode === "closed" && (
         <div className="w-[60px] border-l border-cs-gray-200 bg-white flex flex-col items-center py-6 shadow-[-4px_0_15px_rgba(0,0,0,0.02)]">
           <button
-            onClick={() => handleSlotClick(new Date())}
+            onClick={() => handleSlotClick(new Date(now))}
             className="w-10 h-10 bg-cs-red text-white rounded-full flex items-center justify-center shadow-sm hover:bg-cs-red-dark transition-transform hover:scale-105"
-            title="New Booking"
+            title="New booking"
+            aria-label="New booking"
           >
-            <span className="text-2xl leading-none -mt-1">+</span>
+            <Plus className="w-5 h-5" />
           </button>
         </div>
       )}

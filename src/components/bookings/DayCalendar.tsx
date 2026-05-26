@@ -4,6 +4,7 @@ import { Booking } from "@/types";
 interface DayCalendarProps {
   bookings: Booking[];
   selectedDate: Date;
+  selectedBookingId?: string | null;
   onSlotClick: (time: Date) => void;
   onBookingClick: (booking: Booking) => void;
 }
@@ -21,7 +22,7 @@ const COLORS = [
   "bg-rose-100 border-rose-300 text-rose-800"
 ];
 
-export function DayCalendar({ bookings, selectedDate, onSlotClick, onBookingClick }: DayCalendarProps) {
+export function DayCalendar({ bookings, selectedDate, selectedBookingId, onSlotClick, onBookingClick }: DayCalendarProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -39,9 +40,10 @@ export function DayCalendar({ bookings, selectedDate, onSlotClick, onBookingClic
     return arr;
   }, []);
 
-  // Filter bookings for the selected date
+  // Filter bookings for the selected date — and hide cancelled ones
   const todaysBookings = useMemo(() => {
     return bookings.filter(b => {
+      if (b.status === "cancelled") return false;
       const bDate = new Date(b.startTime);
       return bDate.getDate() === selectedDate.getDate() &&
              bDate.getMonth() === selectedDate.getMonth() &&
@@ -87,7 +89,7 @@ export function DayCalendar({ bookings, selectedDate, onSlotClick, onBookingClic
     <div className="flex bg-white rounded-xl border border-cs-gray-200 relative shadow-sm" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
       {/* Time Column */}
       <div className="w-20 flex-shrink-0 border-r border-cs-gray-100 bg-cs-gray-50 flex flex-col relative z-10" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
-        {hours.map((hour, i) => (
+        {hours.map((hour) => (
           <div key={hour} className="text-right pr-4 text-xs font-medium text-cs-gray-500 relative" style={{ height: `${HOUR_HEIGHT}px` }}>
             <span className="absolute -top-2 right-4 bg-cs-gray-50 px-1">{hour}</span>
           </div>
@@ -114,6 +116,7 @@ export function DayCalendar({ bookings, selectedDate, onSlotClick, onBookingClic
         {todaysBookings.map((booking, i) => {
           const { top, height } = getBlockStyles(booking.startTime, booking.endTime);
           const colorClass = COLORS[i % COLORS.length];
+          const isSelected = selectedBookingId === booking.id;
 
           return (
             <div
@@ -122,14 +125,18 @@ export function DayCalendar({ bookings, selectedDate, onSlotClick, onBookingClic
                 e.stopPropagation(); // prevent triggering empty grid click
                 onBookingClick(booking);
               }}
-              className={`absolute left-2 right-2 rounded-md border ${colorClass} p-2 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer z-20`}
+              className={`absolute left-2 right-2 rounded-md border ${colorClass} p-2 overflow-hidden cursor-pointer z-20 transition-all ${
+                isSelected
+                  ? "ring-2 ring-cs-red ring-offset-1 shadow-md"
+                  : "shadow-sm hover:shadow-md hover:-translate-y-0.5"
+              }`}
               style={{ top, height }}
-              title={`${booking.purpose} - ${booking.guestName}`}
+              title={`${booking.purpose} — ${booking.guestName}`}
             >
-              <div className="font-semibold text-xs leading-tight">{booking.purpose || "Booked"}</div>
-              <div className="text-[10px] mt-0.5 opacity-80 font-medium">{booking.guestName}</div>
-              <div className="text-[10px] absolute bottom-1.5 left-2 opacity-70" suppressHydrationWarning>
-                {new Date(booking.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
+              <div className="font-semibold text-xs leading-tight truncate">{booking.purpose || "Booked"}</div>
+              <div className="text-[10px] mt-0.5 opacity-80 font-medium truncate">{booking.guestName}</div>
+              <div className="text-[10px] absolute bottom-1.5 left-2 opacity-70 tabular-nums" suppressHydrationWarning>
+                {new Date(booking.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}–
                 {new Date(booking.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
               </div>
             </div>
