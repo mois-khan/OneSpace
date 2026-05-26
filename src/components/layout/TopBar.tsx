@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Building2, Search } from "lucide-react";
+import { Bell, Building2, Lock, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useBranch,
@@ -11,9 +11,11 @@ import {
   useUnreadCount,
   useNow,
 } from "@/lib/store";
+import { usePermissions } from "@/lib/rbac";
 import { CommandPalette } from "./CommandPalette";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { ProfileMenu } from "./ProfileMenu";
+import { RoleSwitcher } from "./RoleSwitcher";
 
 function getPageTitle(pathname: string) {
   if (pathname.startsWith("/dashboard")) return "Dashboard";
@@ -32,6 +34,10 @@ export function TopBar() {
   const { setBranch } = useAppActions();
   const user = useCurrentUser();
   const unread = useUnreadCount();
+  const { isBranchLocked } = usePermissions();
+  const lockedBranch = isBranchLocked
+    ? branches.find((b) => b.id === user.branchScope)
+    : null;
 
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
