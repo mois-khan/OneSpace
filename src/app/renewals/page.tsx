@@ -3,7 +3,9 @@
 import { useState, useMemo, useCallback } from "react";
 import {
   useAllMembers,
+  useMembers,
   useBranches,
+  useBranch,
   useAppActions,
   useNow,
 } from "@/lib/store";
@@ -23,8 +25,12 @@ const DAY = 24 * 60 * 60 * 1000;
 type FilterMode = "all" | "critical" | "high" | "expiring" | "ghosting";
 
 export default function RenewalsPage() {
-  const members = useAllMembers();
+  // Branch-scoped: respects the TopBar branch selector.
+  const members = useMembers();
+  // Unscoped: used only for cross-branch lookups (e.g., when an action targets a member by id).
+  const allMembers = useAllMembers();
   const branches = useBranches();
+  const { selectedBranch } = useBranch();
   const now = useNow();
   const { renewMember } = useAppActions();
 
@@ -92,7 +98,9 @@ export default function RenewalsPage() {
   const handleClearSelection = () => setSelectedIds(new Set());
 
   const handleConfirmRenewal = (memberId: string) => {
-    const member = members.find((m) => m.id === memberId);
+    // Use the unscoped member lookup so the toast still works if the row
+    // is dispatched from somewhere outside the current branch scope.
+    const member = allMembers.find((m) => m.id === memberId);
     renewMember(memberId, 12);
     if (member) toast.success(`${member.name} renewed for 12 months`);
     setRenewMemberState(null);
@@ -143,19 +151,27 @@ export default function RenewalsPage() {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] bg-cs-gray-50/30 overflow-auto p-6 animate-in fade-in duration-300">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold font-heading text-cs-black">Renewals & Risk</h1>
-        <p className="text-sm text-cs-gray-500 mt-1">
-          Protect revenue. Spot churn before it happens. Act in one click.
-        </p>
+    <div className="max-w-[1440px] mx-auto animate-in fade-in duration-300">
+      <div className="mb-5 flex items-baseline justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold font-heading text-cs-black">Renewals & Risk</h1>
+          <p className="text-sm text-cs-gray-500 mt-1">
+            Protect revenue. Spot churn before it happens. Act in one click.
+          </p>
+        </div>
+        {selectedBranch && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cs-red-bg text-cs-red text-[12px] font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-cs-red" />
+            Scoped to {selectedBranch.name}
+          </span>
+        )}
       </div>
 
       <RenewalHero members={members} />
 
       <RenewalTimeline members={members} />
 
-      <div className="flex-1 min-h-[400px] flex flex-col">
+      <div>
         <div className="flex items-center gap-1.5 mb-4 flex-wrap">
           {tabs.map((tab) => (
             <button
