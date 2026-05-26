@@ -25,6 +25,7 @@ import { buildChatSnapshot } from "@/lib/ai/snapshot";
 import type { SuggestedAction } from "@/lib/ai/tools";
 import type { UserRole } from "@/types";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface AssistantPanelProps {
   open: boolean;
@@ -378,12 +379,23 @@ function MessageBubble({
             <PendingDots />
           ) : message.content ? (
             <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
               components={{
                 ul: ({ node, ...props }) => <ul className="list-disc pl-4 space-y-1 mb-2" {...props} />,
                 ol: ({ node, ...props }) => <ol className="list-decimal pl-4 space-y-1 mb-2" {...props} />,
                 li: ({ node, ...props }) => <li {...props} />,
                 p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                 strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                table: ({ node, ...props }) => (
+                  <div className="w-full overflow-x-auto mb-2 rounded border border-cs-gray-200">
+                    <table className="w-full text-left border-collapse text-[12px]" {...props} />
+                  </div>
+                ),
+                thead: ({ node, ...props }) => <thead className="bg-cs-gray-100 border-b border-cs-gray-200" {...props} />,
+                tbody: ({ node, ...props }) => <tbody className="divide-y divide-cs-gray-100 bg-white" {...props} />,
+                tr: ({ node, ...props }) => <tr {...props} />,
+                th: ({ node, ...props }) => <th className="py-2 px-3 font-semibold text-cs-black" {...props} />,
+                td: ({ node, ...props }) => <td className="py-2 px-3 text-cs-gray-700" {...props} />,
               }}
             >
               {message.content}
