@@ -1,81 +1,187 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useAllMembers, useBranches, useAppActions, useNow } from "@/lib/store";
+import { useState, useMemo, useCallback } from "react";
+import {
+  useAllMembers,
+  useBranches,
+  useAppActions,
+  useNow,
+} from "@/lib/store";
 import type { Member } from "@/types";
-import { RenewalKPIs } from "@/components/renewals/RenewalKPIs";
+import { RenewalHero } from "@/components/renewals/RenewalHero";
+import { RenewalTimeline } from "@/components/renewals/RenewalTimeline";
 import { RiskTable } from "@/components/renewals/RiskTable";
 import { RenewalModal } from "@/components/renewals/RenewalModal";
+import { BulkEmailModal } from "@/components/renewals/BulkEmailModal";
+import { SelectionToolbar } from "@/components/renewals/SelectionToolbar";
 import { AIEmailModal } from "@/components/members/AIEmailModal";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const DAY = 24 * 60 * 60 * 1000;
+
+type FilterMode = "all" | "critical" | "high" | "expiring" | "ghosting";
 
 export default function RenewalsPage() {
   const members = useAllMembers();
   const branches = useBranches();
   const now = useNow();
   const { renewMember } = useAppActions();
-  const [filterMode, setFilterMode] = useState<"all" | "high" | "medium" | "expiring">("all");
+
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [renewMemberState, setRenewMemberState] = useState<Member | null>(null);
   const [emailMember, setEmailMember] = useState<Member | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
-  const getBranchName = (id: string) => branches.find((b) => b.id === id)?.name || "Unknown";
+  const getBranchName = useCallback(
+    (id: string) => branches.find((b) => b.id === id)?.name || "Unknown",
+    [branches],
+  );
+
+  const atRiskUniverse = useMemo(() => {
+    return members
+      .filter((m) => {
+        const daysLeft = (new Date(m.contractEnd).getTime() - now) / DAY;
+        return (m.riskScore || 0) > 0 || daysLeft <= 45;
+      })
+      .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0));
+  }, [members, now]);
 
   const filteredMembers = useMemo(() => {
     const daysLeft = (endDate: string) =>
       Math.ceil((new Date(endDate).getTime() - now) / DAY);
 
-    const list = members
-      .filter((m) => (m.riskScore || 0) > 0 || daysLeft(m.contractEnd) <= 45)
-      .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0));
+    if (filterMode === "critical")
+      return atRiskUniverse.filter((m) => (m.riskScore || 0) >= 70);
+    if (filterMode === "high")
+      return atRiskUniverse.filter(
+        (m) => (m.riskScore || 0) >= 40 && (m.riskScore || 0) < 70,
+      );
+    if (filterMode === "expiring")
+      return atRiskUniverse.filter((m) => {
+        const d = daysLeft(m.contractEnd);
+        return d > 0 && d <= 30;
+      });
+    if (filterMode === "ghosting")
+      return atRiskUniverse.filter((m) => (m.daysSinceLastVisit || 0) >= 14);
+    return atRiskUniverse;
+  }, [atRiskUniverse, filterMode, now]);
 
-    if (filterMode === "high") return list.filter((m) => (m.riskScore || 0) >= 70);
-    if (filterMode === "medium")
-      return list.filter((m) => (m.riskScore || 0) >= 40 && (m.riskScore || 0) < 70);
-    if (filterMode === "expiring") return list.filter((m) => daysLeft(m.contractEnd) <= 30);
-    return list;
-  }, [members, filterMode, now]);
+  const selectedMembers = useMemo(
+    () => filteredMembers.filter((m) => selectedIds.has(m.id)),
+    [filteredMembers, selectedIds],
+  );
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleToggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (filteredMembers.every((m) => prev.has(m.id))) return new Set();
+      return new Set(filteredMembers.map((m) => m.id));
+    });
+  }, [filteredMembers]);
+
+  const handleClearSelection = () => setSelectedIds(new Set());
 
   const handleConfirmRenewal = (memberId: string) => {
     const member = members.find((m) => m.id === memberId);
     renewMember(memberId, 12);
-    if (member) {
-      toast.success(`${member.name} renewed for 12 months`);
-    }
+    if (member) toast.success(`${member.name} renewed for 12 months`);
     setRenewMemberState(null);
   };
 
+  const handleBulkRenew = () => {
+    selectedMembers.forEach((m) => renewMember(m.id, 12));
+    toast.success(
+      `Renewed ${selectedMembers.length} member${selectedMembers.length === 1 ? "" : "s"} for 12 months`,
+    );
+    handleClearSelection();
+  };
+
+  const handleSuggestOffer = (member: Member) => {
+    // For V1, "Suggest Offer" reuses the AI retention email modal but with a renewal-offer-flavoured prompt.
+    // The modal already pulls personalized context from the member.
+    setEmailMember(member);
+    toast.info(`AI is drafting a personalized retention offer for ${member.name}…`);
+  };
+
+  const tabs: Array<{ id: FilterMode; label: string; count: number }> = [
+    { id: "all", label: "All at-risk", count: atRiskUniverse.length },
+    {
+      id: "critical",
+      label: "Critical (70+)",
+      count: atRiskUniverse.filter((m) => (m.riskScore || 0) >= 70).length,
+    },
+    {
+      id: "high",
+      label: "High (40-69)",
+      count: atRiskUniverse.filter(
+        (m) => (m.riskScore || 0) >= 40 && (m.riskScore || 0) < 70,
+      ).length,
+    },
+    {
+      id: "expiring",
+      label: "Expiring ≤30d",
+      count: atRiskUniverse.filter((m) => {
+        const d = (new Date(m.contractEnd).getTime() - now) / DAY;
+        return d > 0 && d <= 30;
+      }).length,
+    },
+    {
+      id: "ghosting",
+      label: "Ghosting ≥14d",
+      count: atRiskUniverse.filter((m) => (m.daysSinceLastVisit || 0) >= 14).length,
+    },
+  ];
+
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] animate-in fade-in duration-500 bg-cs-gray-50/30 overflow-auto p-6">
-      <div className="mb-6">
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] bg-cs-gray-50/30 overflow-auto p-6 animate-in fade-in duration-300">
+      <div className="mb-5">
         <h1 className="text-2xl font-bold font-heading text-cs-black">Renewals & Risk</h1>
         <p className="text-sm text-cs-gray-500 mt-1">
-          Identify at-risk revenue and take proactive action. Counts here match the dashboard exactly.
+          Protect revenue. Spot churn before it happens. Act in one click.
         </p>
       </div>
 
-      <RenewalKPIs members={members} />
+      <RenewalHero members={members} />
+
+      <RenewalTimeline members={members} />
 
       <div className="flex-1 min-h-[400px] flex flex-col">
-        <div className="flex items-center gap-2 mb-4 border-b border-cs-gray-200 pb-2">
-          {[
-            { id: "all" as const, label: "All At-Risk" },
-            { id: "high" as const, label: "High Risk (70+)" },
-            { id: "medium" as const, label: "Medium Risk (40-69)" },
-            { id: "expiring" as const, label: "Expiring <30d" },
-          ].map((tab) => (
+        <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+          {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setFilterMode(tab.id)}
-              className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors relative ${
-                filterMode === tab.id ? "text-cs-red" : "text-cs-gray-500 hover:text-cs-black"
-              }`}
+              onClick={() => {
+                setFilterMode(tab.id);
+                handleClearSelection();
+              }}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors border",
+                filterMode === tab.id
+                  ? "bg-cs-red text-white border-cs-red shadow-sm"
+                  : "bg-white text-cs-gray-700 border-cs-gray-200 hover:border-cs-gray-300 hover:text-cs-black",
+              )}
             >
               {tab.label}
-              {filterMode === tab.id && (
-                <div className="absolute bottom-[-2px] left-0 right-0 h-0.5 bg-cs-red rounded-t-sm" />
-              )}
+              <span
+                className={cn(
+                  "tabular-nums text-[11px] font-semibold px-1.5 py-0.5 rounded",
+                  filterMode === tab.id
+                    ? "bg-white/20 text-white"
+                    : "bg-cs-gray-100 text-cs-gray-700",
+                )}
+              >
+                {tab.count}
+              </span>
             </button>
           ))}
         </div>
@@ -83,10 +189,32 @@ export default function RenewalsPage() {
         <RiskTable
           members={filteredMembers}
           getBranchName={getBranchName}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
+          onToggleSelectAll={handleToggleSelectAll}
           onRenew={setRenewMemberState}
           onEmail={setEmailMember}
+          onSuggestOffer={handleSuggestOffer}
         />
       </div>
+
+      <SelectionToolbar
+        selectedMembers={selectedMembers}
+        onBulkEmail={() => setBulkOpen(true)}
+        onBulkRenew={handleBulkRenew}
+        onClear={handleClearSelection}
+      />
+
+      <BulkEmailModal
+        key={bulkOpen ? `bulk-${selectedMembers.length}` : "closed"}
+        open={bulkOpen}
+        members={selectedMembers}
+        onClose={() => setBulkOpen(false)}
+        onSendComplete={() => {
+          setBulkOpen(false);
+          handleClearSelection();
+        }}
+      />
 
       <RenewalModal
         member={renewMemberState}
