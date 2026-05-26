@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { ArrowRight, MapPin, QrCode } from "lucide-react";
 import { useBranches } from "@/lib/store";
 
-export default function CheckinLandingPage() {
+function CheckinContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const branchId = searchParams.get("branch") || "b2";
@@ -79,5 +80,13 @@ export default function CheckinLandingPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function CheckinLandingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-cs-gray-50 flex items-center justify-center">Loading...</div>}>
+      <CheckinContent />
+    </Suspense>
   );
 }

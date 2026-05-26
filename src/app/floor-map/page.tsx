@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Seat } from "@/types";
@@ -12,7 +12,7 @@ import { SeatDetailsPanel } from "@/components/floor-map/SeatDetailsPanel";
 
 const ALL_CATEGORIES: ZoneCategory[] = ["hot_desk", "dedicated", "cabin", "meeting"];
 
-export default function FloorMapPage() {
+function FloorMapWrapper() {
   const branches = useBranches();
   const { selectedBranchId } = useBranch();
   const { setBranch } = useAppActions();
@@ -28,6 +28,14 @@ export default function FloorMapPage() {
   }, [urlBranch, branches, selectedBranchId]);
 
   return <FloorMapContent key={branchId} branchId={branchId} branches={branches} onBranchChange={setBranch} />;
+}
+
+export default function FloorMapPage() {
+  return (
+    <Suspense fallback={<div className="flex flex-col h-[calc(100vh-3.5rem-3rem)] animate-pulse bg-cs-gray-50/50" />}>
+      <FloorMapWrapper />
+    </Suspense>
+  );
 }
 
 interface ContentProps {
