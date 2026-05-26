@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { members } from "@/lib/data/seed";
+import { useMembers, useBranch } from "@/lib/store";
 import { Camera, Check, QrCode, Send } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -10,6 +10,8 @@ interface CheckInPanelProps {
 }
 
 export function CheckInPanel({ onCheckIn }: CheckInPanelProps) {
+  const { selectedBranchId } = useBranch();
+  const members = useMembers(selectedBranchId);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [purpose, setPurpose] = useState("Client Meeting");

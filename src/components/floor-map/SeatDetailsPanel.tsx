@@ -1,8 +1,9 @@
 "use client";
 
 import { Seat } from "@/types";
-import { getMemberDisplayInfo } from "@/lib/data/floor-plan";
-import { X, User, Building2, CreditCard, MapPin, ArrowRight, AlertTriangle, Wrench, CalendarClock } from "lucide-react";
+import { useAllMembers } from "@/lib/store";
+import { X, User, Building2, CreditCard, MapPin, ArrowRight, AlertTriangle } from "lucide-react";
+import Link from "next/link";
 import { cn, formatCurrency } from "@/lib/utils";
 
 interface SeatDetailsPanelProps {
@@ -18,13 +19,15 @@ const statusConfig = {
 };
 
 export function SeatDetailsPanel({ seat, onClose }: SeatDetailsPanelProps) {
+  const allMembers = useAllMembers();
+
   if (!seat) return null;
 
   const cfg = statusConfig[seat.status];
-  const memberInfo = seat.memberId ? getMemberDisplayInfo(seat.memberId) : null;
+  const memberInfo = seat.memberId ? allMembers.find((m) => m.id === seat.memberId) : null;
 
-  // Check if this is a special member (Ravi Kumar - expiring contract)
-  const isAtRisk = seat.memberId === "m1";
+  // Check if this is a special member (expiring contract)
+  const isAtRisk = memberInfo?.status === "expiring";
 
   return (
     <div className="w-[320px] bg-white border-l border-cs-gray-200 h-full flex flex-col animate-in slide-in-from-right-5 duration-300 shadow-[-4px_0_16px_rgba(0,0,0,0.06)]">
@@ -58,18 +61,18 @@ export function SeatDetailsPanel({ seat, onClose }: SeatDetailsPanelProps) {
                 </div>
                 <div>
                   <p className="font-semibold text-cs-black text-sm">{memberInfo.name}</p>
-                  <p className="text-xs text-cs-gray-500">{memberInfo.plan} Plan</p>
+                  <p className="text-xs text-cs-gray-500 capitalize">{memberInfo.planType.replace('_', ' ')} Plan</p>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs text-cs-gray-600">
                   <Building2 className="w-3.5 h-3.5" />
-                  {memberInfo.company}
+                  {memberInfo.company || "Independent"}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-cs-gray-600">
                   <CreditCard className="w-3.5 h-3.5" />
-                  {formatCurrency(memberInfo.mrr)}/mo
+                  {formatCurrency(memberInfo.monthlyFee)}/mo
                 </div>
               </div>
             </div>
@@ -86,11 +89,11 @@ export function SeatDetailsPanel({ seat, onClose }: SeatDetailsPanelProps) {
             )}
 
             {/* CTA */}
-            <button className="w-full flex items-center justify-center gap-2 bg-cs-black text-white rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-cs-black/90 transition-colors">
+            <Link href={`/members/${memberInfo.id}`} className="w-full flex items-center justify-center gap-2 bg-cs-black text-white rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-cs-black/90 transition-colors">
               <User className="w-4 h-4" />
               View Full Profile
               <ArrowRight className="w-3.5 h-3.5 ml-auto" />
-            </button>
+            </Link>
           </>
         )}
 

@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "sonner";
+import { AppDataProvider } from "@/lib/store";
 
 export default function RootLayout({
   children,
@@ -28,8 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${fontSans.variable} ${fontHeading.variable} font-sans antialiased min-h-screen bg-cs-gray-50`}>
-        <AppShell>{children}</AppShell>
-        <Toaster position="top-right" />
+        <AppDataProvider>
+          <AppShell>{children}</AppShell>
+          <Toaster position="top-right" />
+        </AppDataProvider>
       </body>
     </html>
   );

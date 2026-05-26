@@ -1,49 +1,165 @@
 "use client";
 
-import { Search, Bell } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Bell, Building2, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  useBranch,
+  useAppActions,
+  useCurrentUser,
+  useUnreadCount,
+  useNow,
+} from "@/lib/store";
+import { CommandPalette } from "./CommandPalette";
+import { NotificationsPopover } from "./NotificationsPopover";
+import { ProfileMenu } from "./ProfileMenu";
+
+function getPageTitle(pathname: string) {
+  if (pathname.startsWith("/dashboard")) return "Dashboard";
+  if (pathname.startsWith("/floor-map")) return "Floor Map";
+  if (pathname.startsWith("/members")) return "Members";
+  if (pathname.startsWith("/visitors")) return "Front Desk";
+  if (pathname.startsWith("/renewals")) return "Renewals";
+  if (pathname.startsWith("/leads")) return "Leads";
+  if (pathname.startsWith("/bookings")) return "Bookings";
+  return "OneSpace";
+}
 
 export function TopBar() {
   const pathname = usePathname();
-  
-  const getPageTitle = () => {
-    if (pathname.includes("/dashboard")) return "Dashboard";
-    if (pathname.includes("/floor-map")) return "Floor Map";
-    if (pathname.includes("/members")) return "Members";
-    if (pathname.includes("/visitors")) return "Visitors";
-    if (pathname.includes("/renewals")) return "Renewals";
-    if (pathname.includes("/leads")) return "Leads";
-    if (pathname.includes("/bookings")) return "Bookings";
-    return "OneSpace";
-  };
+  const { selectedBranchId, branches } = useBranch();
+  const { setBranch } = useAppActions();
+  const user = useCurrentUser();
+  const unread = useUnreadCount();
+
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const now = useNow();
+
+  const bellRef = useRef<HTMLButtonElement>(null);
+  const avatarRef = useRef<HTMLButtonElement>(null);
+
+  // Global Ctrl/Cmd+K for command palette
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
-    <header className="h-14 bg-white border-b border-border px-6 flex items-center justify-between sticky top-0 z-10">
-      <div>
-        <h1 className="text-lg font-semibold text-cs-black font-heading">
-          {getPageTitle()}
+    <header className="h-14 bg-white border-b border-border px-6 flex items-center justify-between sticky top-0 z-30">
+      <div className="flex items-center gap-6">
+        <h1 className="text-lg font-semibold text-cs-black font-heading min-w-[120px]">
+          {getPageTitle(pathname)}
         </h1>
-      </div>
-      
-      <div className="flex items-center gap-4 text-muted-foreground">
-        <button className="hover:text-cs-black transition-colors">
-          <Search className="w-5 h-5" />
-        </button>
-        <button className="hover:text-cs-black transition-colors relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-0 right-0 w-2 h-2 bg-cs-red rounded-full"></span>
-        </button>
-        
-        <div className="h-5 w-[1px] bg-border mx-2"></div>
-        
-        <div className="text-sm font-medium text-cs-black">
-          {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-        </div>
-        
-        <div className="w-8 h-8 rounded-full bg-cs-red-bg flex items-center justify-center text-cs-red font-semibold text-sm border border-cs-red/20">
-          A
+
+        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-cs-gray-50 border border-cs-gray-200 rounded-lg hover:border-cs-red/30 transition-colors">
+          <Building2 className="w-4 h-4 text-cs-gray-500" />
+          <select
+            value={selectedBranchId}
+            onChange={(e) => setBranch(e.target.value)}
+            className="bg-transparent text-sm font-medium text-cs-black focus:outline-none cursor-pointer appearance-none pr-4"
+          >
+            <option value="all">All Branches</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
+
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          className="hidden md:inline-flex items-center gap-2 h-8 pl-2.5 pr-2 bg-cs-gray-50 border border-cs-gray-200 rounded-lg text-[12px] text-cs-gray-500 hover:text-cs-black hover:border-cs-gray-300 transition-colors"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span className="hidden lg:inline">Search anything…</span>
+          <kbd className="ml-1 px-1.5 py-0.5 text-[10px] font-medium bg-white border border-cs-gray-200 rounded">
+            ⌘K
+          </kbd>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          className="md:hidden p-2 rounded-md hover:bg-cs-gray-50 text-cs-gray-700 hover:text-cs-black transition-colors"
+          aria-label="Search"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+
+        <div className="relative">
+          <button
+            ref={bellRef}
+            type="button"
+            onClick={() => {
+              setNotifOpen((o) => !o);
+              setProfileOpen(false);
+            }}
+            className={cn(
+              "relative p-2 rounded-md hover:bg-cs-gray-50 text-cs-gray-700 hover:text-cs-black transition-colors",
+              notifOpen && "bg-cs-gray-50 text-cs-black",
+            )}
+            aria-label="Notifications"
+            aria-expanded={notifOpen}
+          >
+            <Bell className="w-4 h-4" />
+            {unread > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-cs-red text-white text-[10px] font-semibold leading-[16px] tabular-nums">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </button>
+          <NotificationsPopover
+            open={notifOpen}
+            onOpenChange={setNotifOpen}
+            anchorRef={bellRef}
+          />
+        </div>
+
+        <div className="h-5 w-[1px] bg-border mx-1 hidden md:block"></div>
+
+        <div className="text-sm font-medium text-cs-black hidden md:block tabular-nums" suppressHydrationWarning>
+          {new Date(now).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+        </div>
+
+        <div className="relative">
+          <button
+            ref={avatarRef}
+            type="button"
+            onClick={() => {
+              setProfileOpen((o) => !o);
+              setNotifOpen(false);
+            }}
+            className={cn(
+              "w-8 h-8 rounded-full bg-cs-red-bg flex items-center justify-center text-cs-red font-semibold text-sm border border-cs-red/20 transition-shadow",
+              profileOpen && "ring-2 ring-cs-red/30 ring-offset-2",
+            )}
+            aria-label="Account menu"
+            aria-expanded={profileOpen}
+          >
+            {user.initials}
+          </button>
+          <ProfileMenu
+            open={profileOpen}
+            onOpenChange={setProfileOpen}
+            anchorRef={avatarRef}
+          />
+        </div>
+      </div>
+
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </header>
   );
 }

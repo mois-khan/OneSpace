@@ -35,8 +35,16 @@ export interface Ticket {
 
 export interface Invoice {
   id: string;
+  memberId: string;
+  branchId: string;
   amount: number;
   status: "pending" | "paid" | "overdue" | "refunded";
+  /** ISO timestamp when invoice was issued */
+  issuedAt: string;
+  /** ISO timestamp when invoice is due */
+  dueAt: string;
+  /** ISO timestamp when invoice was paid (if any) */
+  paidAt?: string;
 }
 
 export interface Seat {
@@ -97,4 +105,65 @@ export interface Room {
   name: string;
   capacity: number;
   type: "conference" | "phone_booth";
+}
+
+export type NotificationType =
+  | "renewal_due"
+  | "invoice_overdue"
+  | "visitor_overstay"
+  | "occupancy_low"
+  | "lead_won"
+  | "high_risk"
+  | "booking_conflict"
+  | "member_onboarded"
+  | "ticket_open";
+
+export type NotificationSeverity = "info" | "success" | "warning" | "critical";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  severity: NotificationSeverity;
+  message: string;
+  branchId?: string;
+  /** Optional in-app link to navigate to */
+  link?: string;
+  /** ms since epoch */
+  timestamp: number;
+  read: boolean;
+}
+
+export interface ActivityEvent {
+  id: string;
+  /** ms since epoch */
+  timestamp: number;
+  type:
+    | "visitor_checkin"
+    | "visitor_checkout"
+    | "lead_moved"
+    | "lead_added"
+    | "booking_created"
+    | "booking_cancelled"
+    | "member_renewed"
+    | "invoice_paid"
+    | "member_onboarded";
+  message: string;
+  /** Optional in-app link */
+  link?: string;
+  branchId?: string;
+}
+
+export type UserRole = "owner" | "operations" | "branch_manager" | "community";
+
+export interface CurrentUser {
+  name: string;
+  email: string;
+  role: UserRole;
+  /** Human-readable role label for display */
+  roleLabel: string;
+  initials: string;
+  /** When the role is branch-scoped, this is the branch the user is bound to.
+   *  Otherwise, "all" — full access across branches.
+   */
+  branchScope: string;
 }

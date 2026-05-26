@@ -84,7 +84,7 @@ export function DayCalendar({ bookings, selectedDate, onSlotClick, onBookingClic
   };
 
   return (
-    <div className="flex bg-white rounded-xl border border-cs-gray-200 overflow-hidden relative shadow-sm h-full">
+    <div className="flex bg-white rounded-xl border border-cs-gray-200 relative shadow-sm" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
       {/* Time Column */}
       <div className="w-20 flex-shrink-0 border-r border-cs-gray-100 bg-cs-gray-50 flex flex-col relative z-10" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
         {hours.map((hour, i) => (

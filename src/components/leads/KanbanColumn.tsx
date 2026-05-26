@@ -1,11 +1,14 @@
+"use client";
+
 import React from "react";
 import { Lead } from "@/types";
 import { LeadCard } from "./LeadCard";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 
 interface KanbanColumnProps {
   id: string;
   title: string;
+  description?: string;
   leads: Lead[];
   onConvert?: (lead: Lead) => void;
   onDragStart: (e: React.DragEvent, id: string) => void;
@@ -13,50 +16,64 @@ interface KanbanColumnProps {
   onDragOver: (e: React.DragEvent) => void;
 }
 
-export function KanbanColumn({ 
-  id, 
-  title, 
-  leads, 
-  onConvert, 
-  onDragStart, 
-  onDrop, 
-  onDragOver 
+const STAGE_ACCENT: Record<string, string> = {
+  new: "bg-status-blue",
+  toured: "bg-status-amber",
+  proposal: "bg-cs-red",
+  negotiating: "bg-status-green",
+};
+
+export function KanbanColumn({
+  id,
+  title,
+  description,
+  leads,
+  onConvert,
+  onDragStart,
+  onDrop,
+  onDragOver,
 }: KanbanColumnProps) {
-  const isWon = id === "won";
   const totalValue = leads.reduce((sum, l) => sum + (l.mrr || 0), 0);
+  const accent = STAGE_ACCENT[id] || "bg-cs-gray-500";
 
   return (
-    <div 
-      className="flex-shrink-0 w-[280px] flex flex-col h-full bg-cs-gray-50/50 rounded-xl border border-cs-gray-200 overflow-hidden"
+    <div
+      className="flex-shrink-0 w-[300px] flex flex-col h-full bg-cs-gray-50/40 rounded-xl border border-cs-gray-200 overflow-hidden"
       onDrop={(e) => onDrop(e, id)}
       onDragOver={onDragOver}
     >
-      <div className={`p-4 border-b ${isWon ? 'bg-gradient-to-r from-yellow-50 to-amber-50/30 border-amber-200' : 'bg-cs-gray-100/50 border-cs-gray-200'}`}>
-        <div className="flex items-center justify-between mb-1">
-          <h3 className={`font-semibold ${isWon ? 'text-amber-700' : 'text-cs-black'}`}>
-            {title}
-          </h3>
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isWon ? 'bg-amber-200 text-amber-800' : 'bg-cs-gray-200 text-cs-gray-700'}`}>
-            {leads.length}
-          </span>
+      <div className="p-3.5 border-b border-cs-gray-200 bg-white">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={cn("w-1.5 h-1.5 rounded-full", accent)} />
+            <h3 className="font-semibold text-cs-black text-[14px] truncate">{title}</h3>
+            <span className="text-[11px] font-semibold tabular-nums px-1.5 py-0.5 rounded-md bg-cs-gray-100 text-cs-gray-700">
+              {leads.length}
+            </span>
+          </div>
         </div>
-        <p className="text-xs font-medium text-cs-gray-500">
-          {formatCurrency(totalValue)} potential
+        <p className="text-[11px] text-cs-gray-500 flex items-baseline justify-between">
+          <span>{description || "Drag cards to move"}</span>
+          {totalValue > 0 && (
+            <span className="font-semibold text-cs-black tabular-nums">
+              {formatCurrency(totalValue)}
+            </span>
+          )}
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-[150px]">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 min-h-[150px]">
         {leads.map((lead) => (
-          <LeadCard 
-            key={lead.id} 
-            lead={lead} 
-            onConvert={onConvert} 
-            onDragStart={onDragStart} 
+          <LeadCard
+            key={lead.id}
+            lead={lead}
+            onConvert={onConvert}
+            onDragStart={onDragStart}
           />
         ))}
         {leads.length === 0 && (
-          <div className="h-24 border-2 border-dashed border-cs-gray-200 rounded-xl flex items-center justify-center text-xs font-medium text-cs-gray-400">
-            Drop leads here
+          <div className="h-20 border-2 border-dashed border-cs-gray-200 rounded-xl flex items-center justify-center text-xs font-medium text-cs-gray-500">
+            Drop a lead here
           </div>
         )}
       </div>

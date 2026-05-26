@@ -31,13 +31,12 @@ export function Sidebar() {
       </div>
       
       <div className="p-4">
-        {/* Branch Switcher Placeholder */}
-        <div className="mb-6 p-2 rounded-lg bg-sidebar-accent border border-sidebar-border flex items-center justify-between cursor-pointer">
+        {/* Organization Name */}
+        <div className="mb-6 p-2 rounded-lg bg-sidebar-accent border border-sidebar-border flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-medium">
             <span className="w-2 h-2 rounded-full bg-cs-red"></span>
-            Gachibowli
+            CS Coworking Spaces
           </div>
-          <span className="text-xs text-muted-foreground opacity-50">▼</span>
         </div>
 
         <nav className="flex flex-col gap-1">

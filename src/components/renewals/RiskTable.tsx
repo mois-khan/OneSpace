@@ -1,204 +1,295 @@
 "use client";
 
-import React, { useState } from "react";
+import { useMemo } from "react";
 import { Member } from "@/types";
-import { formatCurrency } from "@/lib/utils";
-import { Sparkles, CalendarCheck, MoreHorizontal, CheckSquare, Square } from "lucide-react";
+import { formatCurrency, cn } from "@/lib/utils";
+import {
+  Sparkles,
+  RefreshCcw,
+  Mail,
+  CheckSquare,
+  Square,
+  Calendar,
+  TrendingDown,
+  Ticket,
+  Activity,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { useNow } from "@/lib/store";
 
 interface RiskTableProps {
   members: Member[];
   getBranchName: (id: string) => string;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
   onRenew: (member: Member) => void;
   onEmail: (member: Member) => void;
+  onSuggestOffer: (member: Member) => void;
 }
 
-export function RiskTable({ members, getBranchName, onRenew, onEmail }: RiskTableProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+const DAY = 24 * 60 * 60 * 1000;
 
-  const toggleSelectAll = () => {
-    if (selectedIds.size === members.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(members.map(m => m.id)));
+interface RiskFactor {
+  icon: LucideIcon;
+  label: string;
+  tone: "critical" | "warning" | "info";
+}
+
+export function RiskTable({
+  members,
+  getBranchName,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
+  onRenew,
+  onEmail,
+  onSuggestOffer,
+}: RiskTableProps) {
+  const now = useNow();
+
+  const getDaysLeft = (endDate: string) =>
+    Math.ceil((new Date(endDate).getTime() - now) / DAY);
+
+  const getFactors = (member: Member): RiskFactor[] => {
+    const out: RiskFactor[] = [];
+    const days = getDaysLeft(member.contractEnd);
+    if (days <= 0) {
+      out.push({ icon: Calendar, label: "Contract expired", tone: "critical" });
+    } else if (days <= 14) {
+      out.push({ icon: Calendar, label: `Expires in ${days}d`, tone: "critical" });
+    } else if (days <= 30) {
+      out.push({ icon: Calendar, label: `Expires in ${days}d`, tone: "warning" });
     }
+    if ((member.daysSinceLastVisit || 0) >= 14) {
+      out.push({
+        icon: TrendingDown,
+        label: `No visit ${member.daysSinceLastVisit}d`,
+        tone: "warning",
+      });
+    } else if ((member.daysSinceLastVisit || 0) >= 7) {
+      out.push({
+        icon: Activity,
+        label: `Low usage ${member.daysSinceLastVisit}d`,
+        tone: "info",
+      });
+    }
+    if (member.tickets && member.tickets.length > 0) {
+      out.push({
+        icon: Ticket,
+        label: `${member.tickets.length} open ticket${member.tickets.length === 1 ? "" : "s"}`,
+        tone: "warning",
+      });
+    }
+    if (out.length === 0) {
+      out.push({ icon: Activity, label: "Usage declining", tone: "info" });
+    }
+    return out;
   };
 
-  const toggleSelect = (id: string) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedIds(newSet);
-  };
-
-  const handleBulkReminders = () => {
-    toast.success(`Reminders sent to ${selectedIds.size} members via WhatsApp.`);
-    setSelectedIds(new Set());
-  };
-
-  const getDaysLeft = (endDate: string) => {
-    const end = new Date(endDate).getTime();
-    const now = new Date().getTime();
-    const days = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-    return days;
-  };
-
-  // Generate mock factors based on risk score
-  const getFactors = (member: Member) => {
-    const factors = [];
-    if ((member.daysSinceLastVisit || 0) > 14) factors.push("Visits declining");
-    if (member.tickets && member.tickets.length > 0) factors.push(`${member.tickets.length} open tickets`);
-    const daysLeft = getDaysLeft(member.contractEnd);
-    if (daysLeft < 30) factors.push(`Contract soon (${daysLeft}d)`);
-    
-    if (factors.length === 0) factors.push("Low usage");
-    return factors;
-  };
+  const allSelected = useMemo(
+    () => members.length > 0 && members.every((m) => selectedIds.has(m.id)),
+    [members, selectedIds],
+  );
 
   return (
-    <div className="bg-white border border-cs-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col h-full">
-      
-      {/* Table Toolbar */}
-      <div className="px-6 py-4 border-b border-cs-gray-200 bg-cs-gray-50 flex items-center justify-between min-h-[64px]">
-        {selectedIds.size > 0 ? (
-          <div className="flex items-center gap-4 animate-in fade-in duration-200">
-            <span className="text-sm font-semibold text-cs-black">
-              {selectedIds.size} member{selectedIds.size > 1 ? 's' : ''} selected
-            </span>
-            <button 
-              onClick={handleBulkReminders}
-              className="px-3 py-1.5 bg-cs-black text-white text-sm font-medium rounded-md hover:bg-cs-gray-800 transition-colors shadow-sm"
-            >
-              Send reminders to {selectedIds.size} selected
-            </button>
-            <button 
-              onClick={() => setSelectedIds(new Set())}
-              className="text-sm text-cs-gray-500 hover:text-cs-black font-medium"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <h3 className="font-semibold text-cs-black font-heading">At-Risk Members</h3>
-        )}
-      </div>
-
-      <div className="overflow-x-auto flex-1">
+    <div className="bg-white border border-cs-gray-200 rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(17,24,39,0.04)] flex flex-col">
+      <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
-          <thead className="bg-white sticky top-0 z-10 text-xs uppercase text-cs-gray-500 border-b border-cs-gray-200">
+          <thead className="bg-cs-gray-50/60 sticky top-0 z-10 text-[10px] uppercase text-cs-gray-500 tracking-wider border-b border-cs-gray-100">
             <tr>
-              <th className="px-6 py-4 w-12">
-                <button onClick={toggleSelectAll} className="text-cs-gray-400 hover:text-cs-black">
-                  {selectedIds.size === members.length && members.length > 0 ? (
-                    <CheckSquare className="w-5 h-5 text-cs-red" />
+              <th className="px-4 py-3 w-10">
+                <button
+                  onClick={onToggleSelectAll}
+                  className="text-cs-gray-500 hover:text-cs-black transition-colors flex"
+                  aria-label={allSelected ? "Deselect all" : "Select all"}
+                >
+                  {allSelected ? (
+                    <CheckSquare className="w-4 h-4 text-cs-red" />
                   ) : (
-                    <Square className="w-5 h-5" />
+                    <Square className="w-4 h-4" />
                   )}
                 </button>
               </th>
-              <th className="px-6 py-4 font-semibold">Member</th>
-              <th className="px-6 py-4 font-semibold">Branch & Plan</th>
-              <th className="px-6 py-4 font-semibold">MRR</th>
-              <th className="px-6 py-4 font-semibold">Contract End</th>
-              <th className="px-6 py-4 font-semibold text-center">Risk</th>
-              <th className="px-6 py-4 font-semibold">Factors</th>
-              <th className="px-6 py-4 font-semibold text-right">Actions</th>
+              <th className="px-3 py-3 font-semibold">Member</th>
+              <th className="px-3 py-3 font-semibold">Branch · Plan</th>
+              <th className="px-3 py-3 font-semibold text-right">MRR</th>
+              <th className="px-3 py-3 font-semibold">Contract end</th>
+              <th className="px-3 py-3 font-semibold text-center">Risk</th>
+              <th className="px-3 py-3 font-semibold">Why at risk</th>
+              <th className="px-3 py-3 font-semibold text-right pr-4">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-cs-gray-100">
             {members.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-cs-gray-500">
-                  No at-risk members found for the current filters.
+                <td colSpan={8} className="px-6 py-12 text-center text-cs-gray-500 text-[13px]">
+                  No members match the current filter. Try widening the risk band.
                 </td>
               </tr>
-            ) : members.map(member => {
-              const riskScore = member.riskScore || 0;
-              let badgeColor = "bg-green-100 text-green-700 border-green-200";
-              let dotColor = "bg-green-500";
-              if (riskScore >= 70) {
-                badgeColor = "bg-red-100 text-red-700 border-red-200";
-                dotColor = "bg-red-500";
-              }
-              else if (riskScore >= 40) {
-                badgeColor = "bg-amber-100 text-amber-700 border-amber-200";
-                dotColor = "bg-amber-500";
-              }
+            ) : (
+              members.map((member) => {
+                const riskScore = member.riskScore || 0;
+                const isSelected = selectedIds.has(member.id);
+                const factors = getFactors(member);
+                const daysLeft = getDaysLeft(member.contractEnd);
 
-              const isSelected = selectedIds.has(member.id);
-              const factors = getFactors(member);
+                const bandColor =
+                  riskScore >= 70
+                    ? { bg: "bg-[#DC26261A]", text: "text-status-red", dot: "bg-status-red" }
+                    : riskScore >= 40
+                    ? { bg: "bg-[#D970061A]", text: "text-status-amber", dot: "bg-status-amber" }
+                    : { bg: "bg-[#16A34A1A]", text: "text-status-green", dot: "bg-status-green" };
 
-              return (
-                <tr key={member.id} className={`transition-colors group ${isSelected ? 'bg-red-50/50' : 'hover:bg-cs-gray-50/50'}`}>
-                  <td className="px-6 py-4">
-                    <button onClick={() => toggleSelect(member.id)} className="text-cs-gray-400 hover:text-cs-black">
-                      {isSelected ? (
-                        <CheckSquare className="w-5 h-5 text-cs-red" />
-                      ) : (
-                        <Square className="w-5 h-5" />
-                      )}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-cs-gray-100 flex items-center justify-center text-xs font-bold text-cs-gray-600 border border-cs-gray-200 flex-shrink-0">
-                        {member.name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase()}
+                return (
+                  <tr
+                    key={member.id}
+                    className={cn(
+                      "transition-colors group",
+                      isSelected ? "bg-cs-red-bg/40" : "hover:bg-cs-gray-50/60",
+                    )}
+                  >
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => onToggleSelect(member.id)}
+                        className="text-cs-gray-500 hover:text-cs-black transition-colors flex"
+                        aria-label={isSelected ? "Deselect" : "Select"}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-cs-red" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Link
+                        href={`/members/${member.id}`}
+                        className="flex items-center gap-2.5 group/name"
+                      >
+                        <span className="w-7 h-7 rounded-full bg-cs-gray-100 flex items-center justify-center text-[11px] font-bold text-cs-gray-700 border border-cs-gray-200 shrink-0">
+                          {member.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .substring(0, 2)
+                            .toUpperCase()}
+                        </span>
+                        <span className="min-w-0">
+                          <div className="text-[13px] font-semibold text-cs-black group-hover/name:text-cs-red transition-colors truncate">
+                            {member.name}
+                          </div>
+                          {member.company && (
+                            <div className="text-[11px] text-cs-gray-500 truncate">
+                              {member.company}
+                            </div>
+                          )}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="text-[12px] font-medium text-cs-gray-700">
+                        {getBranchName(member.branchId)}
                       </div>
-                      <p className="font-semibold text-cs-black hover:text-cs-red cursor-pointer">
-                        <Link href={`/members/${member.id}`}>{member.name}</Link>
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-cs-gray-700">{getBranchName(member.branchId)}</p>
-                    <p className="text-xs text-cs-gray-500 capitalize">{member.planType.replace("_", " ")}</p>
-                  </td>
-                  <td className="px-6 py-4 font-medium text-cs-black">
-                    {formatCurrency(member.monthlyFee)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-cs-gray-700">{getDaysLeft(member.contractEnd)}d</p>
-                    <p className="text-xs text-cs-gray-500">{new Date(member.contractEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${badgeColor} min-w-[50px] justify-center`}>
-                      {riskScore} <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {factors.slice(0, 2).map((factor, i) => (
-                        <span key={i} className="text-[10px] font-medium bg-cs-gray-100 text-cs-gray-600 px-2 py-0.5 rounded border border-cs-gray-200">
-                          {factor}
-                        </span>
-                      ))}
-                      {factors.length > 2 && (
-                        <span className="text-[10px] font-medium bg-cs-gray-50 text-cs-gray-500 px-1.5 py-0.5 rounded border border-cs-gray-200">
-                          +{factors.length - 2}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button 
-                        onClick={() => onRenew(member)}
-                        className="px-3 py-1.5 bg-cs-red text-white text-xs font-semibold rounded-md hover:bg-cs-red-dark transition-colors shadow-sm"
+                      <div className="text-[11px] text-cs-gray-500 capitalize">
+                        {member.planType.replace("_", " ")}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums font-medium text-cs-black">
+                      {formatCurrency(member.monthlyFee)}
+                    </td>
+                    <td className="px-3 py-3">
+                      <div
+                        className={cn(
+                          "text-[12px] font-medium tabular-nums",
+                          daysLeft <= 7
+                            ? "text-status-red"
+                            : daysLeft <= 30
+                            ? "text-status-amber"
+                            : "text-cs-gray-700",
+                        )}
                       >
-                        Renew
-                      </button>
-                      <button 
-                        onClick={() => onEmail(member)}
-                        className="px-3 py-1.5 bg-white border border-cs-gray-200 text-cs-gray-700 text-xs font-semibold rounded-md hover:bg-cs-gray-50 transition-colors shadow-sm flex items-center gap-1.5"
+                        {daysLeft <= 0 ? "Expired" : `${daysLeft}d left`}
+                      </div>
+                      <div className="text-[11px] text-cs-gray-500">
+                        {new Date(member.contractEnd).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[12px] font-bold tabular-nums",
+                          bandColor.bg,
+                          bandColor.text,
+                        )}
                       >
-                        <Sparkles className="w-3 h-3 text-cs-red" /> Email
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        <span className={cn("w-1.5 h-1.5 rounded-full", bandColor.dot)} />
+                        {riskScore}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex flex-wrap gap-1 max-w-[260px]">
+                        {factors.slice(0, 3).map((f, i) => {
+                          const Icon = f.icon;
+                          return (
+                            <span
+                              key={i}
+                              className={cn(
+                                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                f.tone === "critical"
+                                  ? "bg-[#DC26261A] text-status-red"
+                                  : f.tone === "warning"
+                                  ? "bg-[#D970061A] text-status-amber"
+                                  : "bg-cs-gray-100 text-cs-gray-700",
+                              )}
+                            >
+                              <Icon className="w-2.5 h-2.5" />
+                              {f.label}
+                            </span>
+                          );
+                        })}
+                        {factors.length > 3 && (
+                          <span className="text-[10px] text-cs-gray-500 px-1 py-0.5">
+                            +{factors.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 pr-4 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          onClick={() => onSuggestOffer(member)}
+                          title="AI Suggest Offer"
+                          className="p-1.5 rounded-md text-cs-gray-500 hover:text-cs-red hover:bg-cs-red-bg/60 transition-colors"
+                          aria-label="AI Suggest Offer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onEmail(member)}
+                          title="Draft retention email"
+                          className="p-1.5 rounded-md text-cs-gray-500 hover:text-cs-black hover:bg-cs-gray-50 transition-colors"
+                          aria-label="Email"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onRenew(member)}
+                          className="ml-1 inline-flex items-center gap-1.5 px-2.5 py-1 bg-cs-red text-white text-[12px] font-medium rounded-md hover:bg-cs-red-dark transition-colors shadow-sm"
+                        >
+                          <RefreshCcw className="w-3 h-3" />
+                          Renew
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

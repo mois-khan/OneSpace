@@ -114,7 +114,7 @@ function addSeatGrid(
         height: seatH,
         shape: "rect",
         status,
-        memberId: status === "occupied" ? `mem-${memberIdx.v++ % memberNames.length}` : undefined,
+        memberId: status === "occupied" ? `${zoneId.split('-')[0]}-mem-${memberIdx.v++}` : undefined,
       });
     }
   }
@@ -141,7 +141,7 @@ function addRoomSeat(
     height: h,
     shape: "rect",
     status,
-    memberId: status === "occupied" ? `mem-${memberIdx.v++ % memberNames.length}` : undefined,
+    memberId: status === "occupied" ? `${zoneId.split('-')[0]}-mem-${memberIdx.v++}` : undefined,
   });
 }
 

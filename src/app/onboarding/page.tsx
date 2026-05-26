@@ -74,7 +74,7 @@ export default function OnboardingPage() {
                   <Building2 className="w-6 h-6" />
                 </div>
                 <h2 className="text-2xl font-bold font-heading text-cs-black">Welcome to OneSpace!</h2>
-                <p className="text-cs-gray-500 mt-2">Let's set up your coworking management platform.</p>
+                <p className="text-cs-gray-500 mt-2">Let&apos;s set up your coworking management platform.</p>
               </div>
 
               <div>
@@ -172,9 +172,9 @@ export default function OnboardingPage() {
               <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
-              <h2 className="text-3xl font-bold font-heading text-cs-black">You're all set!</h2>
+              <h2 className="text-3xl font-bold font-heading text-cs-black">You&apos;re all set!</h2>
               <p className="text-cs-gray-500 max-w-sm mx-auto">
-                We're configuring {orgName}'s workspace environment with {branchCount} locations.
+                We&apos;re configuring {orgName}&apos;s workspace environment with {branchCount} locations.
               </p>
 
               <div className="bg-cs-gray-50 border border-cs-gray-200 rounded-xl p-4 text-left mx-auto max-w-sm my-6 space-y-2">

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Member } from "@/types";
 import { X, CheckCircle2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useNow } from "@/lib/store";
 
 interface RenewalModalProps {
   member: Member | null;
@@ -14,6 +15,7 @@ interface RenewalModalProps {
 
 export function RenewalModal({ member, isOpen, onClose, onConfirm }: RenewalModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const now = useNow();
 
   if (!isOpen || !member) return null;
 
@@ -53,13 +55,13 @@ export function RenewalModal({ member, isOpen, onClose, onConfirm }: RenewalModa
             <div className="flex justify-between text-sm">
               <span className="text-cs-gray-500">New Contract End</span>
               <span className="font-semibold text-green-600">
-                {new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                {new Date(now + 365 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </span>
             </div>
           </div>
 
           <p className="text-xs text-cs-gray-500 italic mb-6">
-            * This action will reset the member's risk score to 0 and clear any expiring alerts.
+            * This action will reset the member&apos;s risk score to 0 and clear any expiring alerts.
           </p>
 
           <div className="flex gap-3">

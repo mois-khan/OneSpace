@@ -2,8 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { Seat } from "@/types";
-import { getMemberDisplayInfo } from "@/lib/data/floor-plan";
-
+import { useAllMembers } from "@/lib/store";
 interface SeatNodeProps {
   seat: Seat;
   isSelected: boolean;
@@ -19,21 +18,14 @@ const statusColors: Record<Seat["status"], { bg: string; border: string; text: s
   maintenance: { bg: "#F3F4F6", border: "#D1D5DB", text: "#6B7280", glow: "#9CA3AF" },
 };
 
-// Small SVG icons for seat status (12x12 viewBox)
-const statusIcons: Record<Seat["status"], string> = {
-  available: "M5 12l5 5L20 7",  // check
-  occupied: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2", // user
-  reserved: "M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z", // clock
-  maintenance: "M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z", // wrench
-};
-
 export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale }: SeatNodeProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const colors = statusColors[seat.status];
+  const allMembers = useAllMembers();
 
-  const memberInfo = seat.memberId ? getMemberDisplayInfo(seat.memberId) : null;
+  const memberInfo = seat.memberId ? allMembers.find((m) => m.id === seat.memberId) : null;
 
   const isRoom = seat.code.startsWith("CONF") || seat.code.startsWith("PB");
   const seatW = seat.width;
@@ -70,7 +62,7 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale }: SeatN
       onMouseLeave={() => { setIsHovered(false); }}
       style={{ cursor: isDragging ? "grabbing" : "pointer" }}
     >
-      {/* Selection glow ring */}
+      {/* Selection glow ring — clamped so it never visually disappears */}
       {isSelected && (
         <rect
           x={-3} y={-3}
@@ -80,9 +72,9 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale }: SeatN
           fill="none"
           stroke="#E8192C"
           strokeWidth={2}
-          opacity={0.5}
+          opacity={0.6}
         >
-          <animate attributeName="opacity" values="0.5;0.2;0.5" dur="2s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.6;0.4;0.6" dur="2s" repeatCount="indefinite" />
         </rect>
       )}
 
@@ -155,58 +147,97 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale }: SeatN
         )}
       </circle>
 
-      {/* Hover Tooltip */}
+      {/* Hover Tooltip — richer when occupied */}
       {isHovered && (
         <g transform={`translate(${seatW / 2}, ${-8})`}>
-          <rect
-            x={-72}
-            y={memberInfo ? -48 : -32}
-            width={144}
-            height={memberInfo ? 46 : 30}
-            rx={8}
-            fill="#0D1B2A"
-            opacity={0.94}
-          />
-          {/* Tooltip arrow */}
-          <polygon points="-5,0 5,0 0,5" fill="#0D1B2A" opacity={0.94} />
-
-          <text
-            x={0}
-            y={memberInfo ? -34 : -14}
-            textAnchor="middle"
-            fill="#fff"
-            fontSize={9}
-            fontWeight={700}
-            fontFamily="Inter, sans-serif"
-          >
-            {seat.code}
-          </text>
-          <text
-            x={0}
-            y={memberInfo ? -22 : -4}
-            textAnchor="middle"
-            fill="#94A3B8"
-            fontSize={7.5}
-            fontFamily="Inter, sans-serif"
-          >
-            {seat.status.charAt(0).toUpperCase() + seat.status.slice(1)}
-          </text>
-          {memberInfo && (
-            <>
-              <line x1={-50} y1={-16} x2={50} y2={-16} stroke="#334155" strokeWidth={0.5} />
-              <text
-                x={0}
-                y={-6}
-                textAnchor="middle"
-                fill="#E2E8F0"
-                fontSize={8}
-                fontWeight={600}
-                fontFamily="Inter, sans-serif"
-              >
-                {memberInfo.name}
-              </text>
-            </>
-          )}
+          {(() => {
+            const lines: Array<{ text: string; color: string; size: number; weight: number }> = [];
+            lines.push({ text: seat.code, color: "#fff", size: 9, weight: 700 });
+            lines.push({
+              text: seat.status.charAt(0).toUpperCase() + seat.status.slice(1),
+              color: "#94A3B8",
+              size: 7.5,
+              weight: 400,
+            });
+            if (memberInfo) {
+              lines.push({ text: memberInfo.name, color: "#E2E8F0", size: 8, weight: 600 });
+              const plan = memberInfo.planType.replace("_", " ");
+              lines.push({
+                text: `${plan} · ₹${(memberInfo.monthlyFee / 1000).toFixed(1)}k/mo`,
+                color: "#94A3B8",
+                size: 7.5,
+                weight: 400,
+              });
+              if (memberInfo.company) {
+                lines.push({
+                  text: memberInfo.company,
+                  color: "#94A3B8",
+                  size: 7,
+                  weight: 400,
+                });
+              }
+            }
+            const rowH = 11;
+            const padY = 8;
+            const boxH = lines.length * rowH + padY;
+            const boxY = -boxH - 6;
+            return (
+              <>
+                <rect
+                  x={-78}
+                  y={boxY}
+                  width={156}
+                  height={boxH}
+                  rx={8}
+                  fill="#0D1B2A"
+                  opacity={0.95}
+                />
+                <polygon points="-5,0 5,0 0,5" fill="#0D1B2A" opacity={0.95} />
+                {lines.map((l, i) => {
+                  if (i === 2 && memberInfo) {
+                    // Divider above the member name
+                    return (
+                      <g key={`g-${i}`}>
+                        <line
+                          x1={-58}
+                          y1={boxY + padY / 2 + i * rowH - 3}
+                          x2={58}
+                          y2={boxY + padY / 2 + i * rowH - 3}
+                          stroke="#334155"
+                          strokeWidth={0.5}
+                        />
+                        <text
+                          x={0}
+                          y={boxY + padY / 2 + i * rowH + 6}
+                          textAnchor="middle"
+                          fill={l.color}
+                          fontSize={l.size}
+                          fontWeight={l.weight}
+                          fontFamily="Inter, sans-serif"
+                        >
+                          {l.text}
+                        </text>
+                      </g>
+                    );
+                  }
+                  return (
+                    <text
+                      key={`t-${i}`}
+                      x={0}
+                      y={boxY + padY / 2 + i * rowH + 6}
+                      textAnchor="middle"
+                      fill={l.color}
+                      fontSize={l.size}
+                      fontWeight={l.weight}
+                      fontFamily="Inter, sans-serif"
+                    >
+                      {l.text}
+                    </text>
+                  );
+                })}
+              </>
+            );
+          })()}
         </g>
       )}
     </g>
