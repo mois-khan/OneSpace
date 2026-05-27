@@ -36,7 +36,12 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/bookings", icon: CalendarDays, label: "Bookings", needs: "manage_bookings" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { can, isBranchLocked } = usePermissions();
   const user = useCurrentUser();
@@ -45,9 +50,21 @@ export function Sidebar() {
   const hiddenCount = NAV_ITEMS.length - visibleItems.length;
 
   return (
-    <aside className="w-64 bg-sidebar text-sidebar-foreground h-full flex flex-col shadow-[2px_0_8px_rgba(0,0,0,0.15)] z-20">
-      <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden transition-opacity"
+          onClick={onClose}
+        />
+      )}
+      
+      <aside className={cn(
+        "w-64 bg-sidebar text-sidebar-foreground h-full flex flex-col shadow-[2px_0_8px_rgba(0,0,0,0.15)] z-50 fixed md:relative transition-transform duration-300 ease-in-out",
+        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}>
+        <div className="h-14 md:h-16 flex items-center px-6 border-b border-sidebar-border">
+          <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-cs-red flex items-center justify-center font-bold text-xs">
             CS
           </div>
@@ -108,5 +125,6 @@ export function Sidebar() {
         <span className="font-medium text-white/60">⌘J</span> AI assistant
       </div>
     </aside>
+    </>
   );
 }

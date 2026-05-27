@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Building2, Lock, Search } from "lucide-react";
+import { Bell, Building2, Lock, Search, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useBranch,
@@ -28,7 +28,11 @@ function getPageTitle(pathname: string) {
   return "OneSpace";
 }
 
-export function TopBar() {
+interface TopBarProps {
+  onMenuToggle?: () => void;
+}
+
+export function TopBar({ onMenuToggle }: TopBarProps) {
   const pathname = usePathname();
   const { selectedBranchId, branches } = useBranch();
   const { setBranch } = useAppActions();
@@ -60,9 +64,17 @@ export function TopBar() {
   }, []);
 
   return (
-    <header className="h-14 bg-white border-b border-border px-6 flex items-center justify-between sticky top-0 z-30">
-      <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold text-cs-black font-heading min-w-[100px]">
+    <header className="h-14 bg-white border-b border-border px-4 md:px-6 flex items-center justify-between sticky top-0 z-30">
+      <div className="flex items-center gap-3 md:gap-4">
+        {onMenuToggle && (
+          <button
+            onClick={onMenuToggle}
+            className="md:hidden p-1.5 -ml-1.5 text-cs-gray-600 hover:text-cs-black rounded-md hover:bg-cs-gray-50 transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+        <h1 className="text-lg font-semibold text-cs-black font-heading min-w-[100px] truncate">
           {getPageTitle(pathname)}
         </h1>
 
