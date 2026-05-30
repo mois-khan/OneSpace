@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useAllMembers, useBranches, useAppActions, useTickets } from "@/lib/store";
+import { useAllMembers, useBranches, useAppActions, useTickets, useConversations } from "@/lib/store";
 import { RiskGauge } from "@/components/members/RiskGauge";
 import { AIEmailModal } from "@/components/members/AIEmailModal";
 import {
@@ -18,6 +18,8 @@ import {
   FileText,
   Plus,
   RefreshCcw,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
@@ -29,12 +31,28 @@ export default function MemberProfilePage() {
   const branches = useBranches();
   const { renewMember } = useAppActions();
   const allTickets = useTickets();
-  const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "invoices" | "tickets">("overview");
+  const allConversations = useConversations();
+  const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "invoices" | "tickets" | "messages">("overview");
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [replyText, setReplyText] = useState("");
 
   const memberId = params.id as string;
   const member = members.find((m) => m.id === memberId);
   const memberTickets = allTickets.filter(t => t.memberId === memberId);
+  const conversation = allConversations.find(c => c.memberId === memberId);
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyText.trim()) return;
+    useAppActions.getState().sendMessage({
+      conversationId: conversation?.id,
+      memberId: member.id,
+      branchId: member.branchId,
+      text: replyText,
+      senderId: "admin"
+    });
+    setReplyText("");
+  };
 
   if (!member) {
     return (
@@ -183,7 +201,7 @@ export default function MemberProfilePage() {
         <div className="bg-white border-b border-cs-gray-200 px-8 pt-6">
           <h2 className="text-2xl font-bold font-heading text-cs-black mb-6">Member Profile</h2>
           <div className="flex gap-6 border-b-2 border-transparent">
-            {(["overview", "bookings", "invoices", "tickets"] as const).map((tab) => (
+            {(["overview", "messages", "bookings", "invoices", "tickets"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}

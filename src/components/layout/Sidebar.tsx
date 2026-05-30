@@ -12,6 +12,7 @@ import {
   RefreshCcw,
   Lock,
   Headset,
+  MessageSquare,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/renewals", icon: RefreshCcw, label: "Renewals", needs: "view_renewals" },
   { href: "/leads", icon: BarChart4, label: "Leads", needs: "manage_leads" },
   { href: "/bookings", icon: CalendarDays, label: "Bookings", needs: "manage_bookings" },
+  { href: "/inbox", icon: MessageSquare, label: "Inbox" },
   { href: "/support", icon: Headset, label: "Support" },
 ];
 
