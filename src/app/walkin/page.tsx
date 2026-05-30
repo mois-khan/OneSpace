@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAppActions, useAllMembers, usePreRegistrations } from "@/lib/store";
-import { CheckCircle2, QrCode, ArrowRight, ArrowLeft, Loader2, UserPlus, KeyRound, Ticket } from "lucide-react";
+import { CheckCircle2, QrCode, ArrowRight, ArrowLeft, Loader2, UserPlus, KeyRound, Ticket, Home } from "lucide-react";
 import { sendWhatsAppNotification } from "@/app/actions/whatsapp";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -55,7 +55,7 @@ export default function WalkinPage() {
     }
 
     try {
-      // 1. Convert Pre-Registration in Store (handles visitor and lead auto-creation)
+      // 1. Convert Pre-Registration
       convertPreRegistration(found.id);
 
       // 2. Dispatch WhatsApp Notification
@@ -92,7 +92,7 @@ export default function WalkinPage() {
     const isMeeting = form.purpose === "Meeting" || form.purpose === "Interview";
 
     try {
-      // 1. Add to Visitors Log (This will auto-add to Leads in our store reducer if not a meeting/interview)
+      // 1. Add to Visitors Log
       checkInVisitor({
         branchId: "b2",
         name: form.name,
@@ -149,302 +149,312 @@ export default function WalkinPage() {
     setIsSubmitted(false);
   };
 
-  // SUCCESS SCREEN
-  if (isSubmitted) {
-    const firstName = successDetails.name.split(" ")[0];
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-white bg-cs-black">
-        <div className="w-16 h-16 bg-status-green/20 rounded-full flex items-center justify-center mb-6 animate-in zoom-in duration-300">
-          <CheckCircle2 className="w-9 h-9 text-status-green" />
-        </div>
-        <h1 className="text-2xl font-bold mb-2">Welcome, {firstName}!</h1>
-        <p className="text-cs-gray-400 mb-8 max-w-xs text-sm">
-          Your check-in is complete. Please display this pass at the front desk.
-        </p>
-
-        {/* Premium Digital Entry Ticket Pass */}
-        <div className="w-full max-w-sm bg-white text-cs-black rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] relative border border-cs-gray-200">
-          
-          {/* Top Pass Header */}
-          <div className="bg-cs-black text-white p-4 text-left flex justify-between items-center border-b border-white/10">
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 bg-cs-red flex items-center justify-center font-bold text-[10px] text-white rounded">CS</div>
-              <span className="text-[12px] font-bold tracking-wider uppercase font-heading">OneSpace</span>
-            </div>
-            <span className="inline-flex items-center gap-1 bg-status-green/10 text-status-green px-2 py-0.5 rounded text-[10px] font-semibold border border-status-green/25 uppercase">
-              Verified
-            </span>
+  return (
+    <div className="flex-1 flex flex-col min-h-screen">
+      {/* Top Header */}
+      <div className="w-full bg-white border-b border-cs-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-cs-red flex items-center justify-center font-bold text-sm text-white rounded">
+            CS
           </div>
+          <span className="text-cs-black font-bold tracking-widest uppercase font-heading text-sm">
+            OneSpace Walk-In
+          </span>
+        </div>
+        <Link 
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-cs-gray-500 hover:text-cs-black bg-cs-gray-50 hover:bg-cs-gray-100 px-3 py-1.5 rounded-lg border border-cs-gray-200 transition-colors"
+        >
+          <Home className="w-4 h-4" /> Back to Dashboard
+        </Link>
+      </div>
 
-          {/* Ticket Body */}
-          <div className="p-6 text-left space-y-5">
-            
-            {/* The Registered Entry Message - Critical Rule */}
-            <div className="bg-[#16A34A0D] border border-status-green/20 rounded-xl p-3.5 text-center flex flex-col items-center gap-1">
-              <Ticket className="w-5 h-5 text-status-green animate-pulse" />
-              <div className="text-[14px] font-bold text-status-green leading-snug">
-                As a registered user, entry is allowed.
-              </div>
-              <div className="text-[10px] text-cs-gray-500">Front desk entry clearance code activated</div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto relative">
+        
+        {/* SUCCESS SCREEN */}
+        {isSubmitted ? (
+          <div className="w-full flex flex-col items-center animate-in zoom-in-95 duration-300 py-10">
+            <div className="w-16 h-16 bg-status-green/10 rounded-full flex items-center justify-center mb-6 shadow-sm ring-1 ring-status-green/20">
+              <CheckCircle2 className="w-8 h-8 text-status-green" />
             </div>
+            <h1 className="text-3xl font-extrabold text-cs-black tracking-tight mb-2">Welcome, {successDetails.name.split(" ")[0]}!</h1>
+            <p className="text-cs-gray-500 mb-8 max-w-sm text-center text-sm leading-relaxed">
+              Your check-in is complete. Please display this pass at the front desk.
+            </p>
 
-            {/* QR Code Container */}
-            <div className="flex justify-center py-2">
-              <div className="bg-cs-gray-50 p-3 rounded-xl border border-cs-gray-200 relative">
-                <svg width="140" height="140" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <pattern id="qr-success" width="8" height="8" patternUnits="userSpaceOnUse">
-                      <rect width="4" height="4" fill="#0D1B2A" />
-                      <rect x="4" y="4" width="4" height="4" fill="#0D1B2A" />
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill="url(#qr-success)" />
-                  <rect x="30%" y="30%" width="40%" height="40%" fill="white" />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-white p-2 rounded-lg shadow-md border border-cs-gray-100">
-                    <QrCode className="w-7 h-7 text-cs-red" />
+            {/* Premium Digital Entry Ticket Pass */}
+            <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden border border-cs-gray-200 relative mb-8">
+              
+              {/* Ticket Header */}
+              <div className="bg-cs-gray-50 p-4 text-left flex justify-between items-center border-b border-cs-gray-200">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-cs-red flex items-center justify-center font-bold text-[10px] text-white rounded shadow-sm">CS</div>
+                  <span className="text-xs font-bold text-cs-black tracking-wider uppercase font-heading">OneSpace</span>
+                </div>
+                <span className="inline-flex items-center gap-1 bg-status-green/10 text-status-green px-2 py-0.5 rounded text-[10px] font-semibold border border-status-green/20 uppercase tracking-wide">
+                  Verified
+                </span>
+              </div>
+
+              {/* Ticket Body */}
+              <div className="p-6 text-left space-y-6">
+                
+                {/* Entry Message */}
+                <div className="bg-status-green/5 border border-status-green/20 rounded-xl p-4 text-center flex flex-col items-center gap-1.5 shadow-sm">
+                  <Ticket className="w-5 h-5 text-status-green animate-pulse" />
+                  <div className="text-sm font-bold text-status-green">
+                    As a registered user, entry is allowed.
+                  </div>
+                  <div className="text-[10px] text-cs-gray-500 font-medium">Front desk entry clearance active</div>
+                </div>
+
+                {/* QR Code Container */}
+                <div className="flex justify-center py-2">
+                  <div className="bg-white p-3 rounded-xl border border-cs-gray-200 shadow-sm relative">
+                    <svg width="120" height="120" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <pattern id="qr-success" width="8" height="8" patternUnits="userSpaceOnUse">
+                          <rect width="4" height="4" fill="#0F172A" />
+                          <rect x="4" y="4" width="4" height="4" fill="#0F172A" />
+                        </pattern>
+                      </defs>
+                      <rect width="100%" height="100%" fill="url(#qr-success)" />
+                      <rect x="35%" y="35%" width="30%" height="30%" fill="white" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-white p-1.5 rounded-lg shadow-sm border border-cs-gray-100">
+                        <QrCode className="w-6 h-6 text-cs-red" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pass ID */}
+                <div className="text-center">
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-cs-gray-400 font-bold">Entry Pass ID</div>
+                  <div className="text-2xl font-bold font-mono tracking-widest text-cs-black mt-1">
+                    {successDetails.code}
+                  </div>
+                </div>
+
+                {/* Meta details list */}
+                <div className="border-t border-cs-gray-100 pt-5 grid grid-cols-2 gap-y-4 gap-x-3 text-sm">
+                  <div>
+                    <div className="text-cs-gray-400 uppercase tracking-wider text-[10px] font-bold">Guest Name</div>
+                    <div className="font-semibold text-cs-black truncate mt-1">{successDetails.name}</div>
+                  </div>
+                  <div>
+                    <div className="text-cs-gray-400 uppercase tracking-wider text-[10px] font-bold">Visit Purpose</div>
+                    <div className="font-semibold text-cs-black truncate mt-1">{successDetails.purpose}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-cs-gray-400 uppercase tracking-wider text-[10px] font-bold">Host / Meeting With</div>
+                    <div className="font-semibold text-cs-black truncate mt-1">{successDetails.hostName}</div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Code identifier */}
-            <div className="text-center">
-              <div className="text-[9px] uppercase tracking-[0.2em] text-cs-gray-500 font-medium">Entry ticket pass id</div>
-              <div className="text-xl font-bold font-mono tracking-widest text-cs-black mt-0.5">
-                {successDetails.code}
+              {/* Ticket jagged edge */}
+              <div className="h-2.5 bg-[#F8F6F4] flex justify-between overflow-hidden border-t border-cs-gray-200">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div key={i} className="w-2.5 h-2.5 bg-[#F8F6F4] rounded-full -mt-1.5 shrink-0 border border-cs-gray-200" />
+                ))}
               </div>
             </div>
 
-            {/* Meta details list */}
-            <div className="border-t border-cs-gray-100 pt-4 grid grid-cols-2 gap-y-3 gap-x-2 text-[12px]">
+            <p className="text-xs text-cs-gray-500 max-w-xs text-center leading-relaxed font-medium">
+              We&apos;ve sent a digital copy of this pass to your WhatsApp.
+            </p>
+
+            <button 
+              onClick={handleReset}
+              className="mt-8 text-sm font-semibold text-cs-red hover:text-cs-red-dark transition-colors"
+            >
+              Register another guest
+            </button>
+          </div>
+        ) : flow === "select" ? (
+          /* SELECT FLOW */
+          <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="text-center mb-10">
+              <h1 className="text-cs-black text-3xl font-extrabold tracking-tight mt-4">Welcome to CS Coworking</h1>
+              <p className="text-cs-gray-500 mt-2 text-base">Please select how you would like to register your visit today.</p>
+            </div>
+
+            <div className="space-y-4">
+              <button
+                onClick={() => setFlow("invite")}
+                className="w-full text-left bg-white border border-cs-gray-200 hover:border-cs-red hover:shadow-md transition-all p-5 rounded-2xl flex gap-4 items-start group relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cs-red/0 via-cs-red/5 to-cs-red/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="p-3 bg-cs-red-bg text-cs-red rounded-xl group-hover:scale-110 transition-transform shadow-sm relative z-10">
+                  <KeyRound className="w-6 h-6" />
+                </div>
+                <div className="relative z-10 flex-1">
+                  <h2 className="text-cs-black text-lg font-bold flex items-center justify-between">
+                    I have an Invite Code 
+                    <ArrowRight className="w-5 h-5 text-cs-red opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                  </h2>
+                  <p className="text-cs-gray-500 text-sm mt-1 leading-relaxed pr-6">
+                    My host pre-registered me and sent me an invite code or link via WhatsApp.
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setFlow("new")}
+                className="w-full text-left bg-white border border-cs-gray-200 hover:border-cs-gray-300 hover:shadow-md transition-all p-5 rounded-2xl flex gap-4 items-start group relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cs-gray-100/0 via-cs-gray-100/50 to-cs-gray-100/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="p-3 bg-cs-gray-50 text-cs-gray-700 rounded-xl group-hover:scale-110 transition-transform shadow-sm relative z-10 border border-cs-gray-200">
+                  <UserPlus className="w-6 h-6" />
+                </div>
+                <div className="relative z-10 flex-1">
+                  <h2 className="text-cs-black text-lg font-bold flex items-center justify-between">
+                    I am a New Visitor 
+                    <ArrowRight className="w-5 h-5 text-cs-gray-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                  </h2>
+                  <p className="text-cs-gray-500 text-sm mt-1 leading-relaxed pr-6">
+                    I do not have an invitation. I would like to register my details for a new visit.
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        ) : flow === "invite" ? (
+          /* INVITE FLOW */
+          <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
+            <button 
+              onClick={() => setFlow("select")}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-cs-gray-500 hover:text-cs-black transition-colors mb-8"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to selection
+            </button>
+
+            <div className="mb-8">
+              <h1 className="text-cs-black text-3xl font-extrabold tracking-tight">Enter Invite Code</h1>
+              <p className="text-cs-gray-500 mt-2 text-sm">Please input the code you received via WhatsApp from your host.</p>
+            </div>
+
+            <form onSubmit={handleInviteSubmit} className="space-y-6">
               <div>
-                <div className="text-cs-gray-500 uppercase tracking-wider text-[9px] font-medium">Guest Name</div>
-                <div className="font-semibold text-cs-black truncate mt-0.5">{successDetails.name}</div>
+                <label className="block text-xs font-bold text-cs-gray-500 mb-2 uppercase tracking-widest">Invite Code</label>
+                <input 
+                  required
+                  autoFocus
+                  type="text" 
+                  value={inviteCode} 
+                  onChange={(e) => setInviteCode(e.target.value)} 
+                  placeholder="e.g. OS-A1B2"
+                  autoCapitalize="characters"
+                  className="w-full bg-white border border-cs-gray-300 rounded-xl px-5 py-5 text-center text-cs-black text-3xl font-mono font-bold tracking-widest placeholder:text-cs-gray-300 placeholder:font-normal focus:outline-none focus:border-cs-red focus:ring-2 focus:ring-cs-red/20 transition-all shadow-sm uppercase" 
+                />
               </div>
+
+              <button 
+                disabled={isSubmitting || !inviteCode.trim()} 
+                type="submit" 
+                className="w-full bg-cs-red hover:bg-cs-red-dark text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
+              >
+                {isSubmitting ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Verifying...</>
+                ) : (
+                  <>Verify & Check In <ArrowRight className="w-5 h-5" /></>
+                )}
+              </button>
+            </form>
+          </div>
+        ) : (
+          /* NEW WALKIN FLOW */
+          <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300 pb-12">
+            <button 
+              onClick={() => setFlow("select")}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-cs-gray-500 hover:text-cs-black transition-colors mb-6"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to selection
+            </button>
+
+            <div className="mb-8">
+              <h1 className="text-cs-black text-3xl font-extrabold tracking-tight">Visitor Details</h1>
+              <p className="text-cs-gray-500 mt-2 text-sm">Fill in your details to register your visit and generate your entry pass.</p>
+            </div>
+
+            <form onSubmit={handleWalkinSubmit} className="space-y-5 bg-white p-6 rounded-2xl border border-cs-gray-200 shadow-sm">
               <div>
-                <div className="text-cs-gray-500 uppercase tracking-wider text-[9px] font-medium">Visit Purpose</div>
-                <div className="font-semibold text-cs-black truncate mt-0.5">{successDetails.purpose}</div>
+                <label className="block text-[11px] font-bold text-cs-gray-500 mb-1.5 uppercase tracking-wider">Full Name *</label>
+                <input required type="text" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="w-full bg-white border border-cs-gray-300 rounded-lg px-4 py-3 text-cs-black text-sm placeholder:text-cs-gray-400 focus:outline-none focus:border-cs-red focus:ring-1 focus:ring-cs-red transition-all" placeholder="John Doe" />
               </div>
-              <div className="col-span-2">
-                <div className="text-cs-gray-500 uppercase tracking-wider text-[9px] font-medium">Host / Meeting With</div>
-                <div className="font-semibold text-cs-black truncate mt-0.5">{successDetails.hostName}</div>
+              
+              <div>
+                <label className="block text-[11px] font-bold text-cs-gray-500 mb-1.5 uppercase tracking-wider">Mobile Number *</label>
+                <div className="flex shadow-sm rounded-lg">
+                  <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-cs-gray-300 bg-cs-gray-50 text-cs-gray-600 text-sm font-medium">
+                    +91
+                  </span>
+                  <input required type="tel" pattern="[6789][0-9]{9}" title="Enter a valid 10-digit Indian phone number" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} className="w-full bg-white border border-cs-gray-300 rounded-r-lg px-4 py-3 text-cs-black text-sm placeholder:text-cs-gray-400 focus:outline-none focus:border-cs-red focus:ring-1 focus:ring-cs-red transition-all" placeholder="9876543210" />
+                </div>
               </div>
-            </div>
 
-          </div>
+              <div>
+                <label className="block text-[11px] font-bold text-cs-gray-500 mb-1.5 uppercase tracking-wider">Email Address *</label>
+                <input required type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="w-full bg-white border border-cs-gray-300 rounded-lg px-4 py-3 text-cs-black text-sm placeholder:text-cs-gray-400 focus:outline-none focus:border-cs-red focus:ring-1 focus:ring-cs-red transition-all" placeholder="john@example.com" />
+              </div>
 
-          {/* Ticket bottom jagged border styling */}
-          <div className="h-2 bg-cs-gray-100 flex justify-between overflow-hidden">
-            {Array.from({ length: 18 }).map((_, i) => (
-              <div key={i} className="w-3 h-3 bg-white rounded-full -mt-1.5 shrink-0" />
-            ))}
-          </div>
-        </div>
+              <div>
+                <label className="block text-[11px] font-bold text-cs-gray-500 mb-1.5 uppercase tracking-wider">Company (Optional)</label>
+                <input type="text" value={form.company} onChange={(e) => setForm({...form, company: e.target.value})} className="w-full bg-white border border-cs-gray-300 rounded-lg px-4 py-3 text-cs-black text-sm placeholder:text-cs-gray-400 focus:outline-none focus:border-cs-red focus:ring-1 focus:ring-cs-red transition-all" placeholder="Where do you work?" />
+              </div>
 
-        <p className="text-[12px] text-cs-gray-500 mt-6 max-w-xs leading-relaxed">
-          We&apos;ve sent a digital copy of this pass to your WhatsApp.
-        </p>
+              <div className="pt-2">
+                <label className="block text-[11px] font-bold text-cs-gray-500 mb-1.5 uppercase tracking-wider">Purpose of Visit *</label>
+                <select value={form.purpose} onChange={(e) => setForm({...form, purpose: e.target.value, hostName: e.target.value !== "Meeting" && e.target.value !== "Interview" ? "" : form.hostName})} className="w-full bg-white border border-cs-gray-300 rounded-lg px-4 py-3 text-cs-black text-sm focus:outline-none focus:border-cs-red focus:ring-1 focus:ring-cs-red transition-all shadow-sm font-medium">
+                  <option value="Enquiry">Workspace Enquiry / Tour</option>
+                  <option value="Meeting">Meeting a Member</option>
+                  <option value="Event">Attending an Event</option>
+                  <option value="Interview">Interview</option>
+                </select>
+              </div>
 
-        <button 
-          onClick={handleReset}
-          className="mt-8 text-sm text-cs-gray-400 hover:text-white transition-colors underline underline-offset-4"
-        >
-          Check in another guest / Go Back
-        </button>
-      </div>
-    );
-  }
+              {form.purpose === "Enquiry" && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className="block text-[11px] font-bold text-cs-gray-500 mb-1.5 uppercase tracking-wider">Interested In (Optional)</label>
+                  <select value={form.planType} onChange={(e) => setForm({...form, planType: e.target.value})} className="w-full bg-white border border-cs-gray-300 rounded-lg px-4 py-3 text-cs-black text-sm focus:outline-none focus:border-cs-red focus:ring-1 focus:ring-cs-red transition-all shadow-sm font-medium">
+                    <option value="" disabled>Select a plan...</option>
+                    <option value="Flexi">Flexi Desk</option>
+                    <option value="Dedicated">Dedicated Desk</option>
+                    <option value="Cabin">Private Cabin</option>
+                    <option value="Day Pass">Day Pass</option>
+                  </select>
+                </div>
+              )}
 
-  // 1. SELECT FLOW (Entrance option screen)
-  if (flow === "select") {
-    return (
-      <div className="flex-1 flex flex-col p-6 max-w-md mx-auto w-full justify-center">
-        <div className="mb-10 text-center">
-          <div className="w-12 h-12 bg-cs-red flex items-center justify-center font-black text-xl text-white rounded-xl mx-auto mb-4 shadow-[0_0_15px_rgba(232,25,44,0.3)]">
-            CS
-          </div>
-          <div className="text-cs-red font-bold text-lg tracking-widest uppercase font-heading">OneSpace</div>
-          <h1 className="text-white text-3xl font-extrabold tracking-tight mt-4">Welcome to CS Coworking</h1>
-          <p className="text-cs-gray-400 mt-2 text-sm">Please select how you would like to register your visit today.</p>
-        </div>
+              {(form.purpose === "Meeting" || form.purpose === "Interview") && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className="block text-[11px] font-bold text-cs-gray-500 mb-1.5 uppercase tracking-wider">Who are you meeting? *</label>
+                  <select required value={form.hostName} onChange={(e) => setForm({...form, hostName: e.target.value})} className="w-full bg-white border border-cs-gray-300 rounded-lg px-4 py-3 text-cs-black text-sm focus:outline-none focus:border-cs-red focus:ring-1 focus:ring-cs-red transition-all shadow-sm font-medium">
+                    <option value="" disabled>Select a host...</option>
+                    {members.map(m => (
+                      <option key={m.id} value={m.name}>{m.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-cs-gray-500 mt-2 font-medium">We will notify them of your arrival instantly.</p>
+                </div>
+              )}
 
-        <div className="space-y-4">
-          {/* Option A: Invite Code (Pre-registered) */}
-          <button
-            onClick={() => setFlow("invite")}
-            className="w-full text-left bg-white/5 border border-white/10 hover:border-cs-red/50 hover:bg-white/10 transition-all p-5 rounded-2xl flex gap-4 items-start group shadow-sm"
-          >
-            <div className="p-3 bg-cs-red-bg text-cs-red rounded-xl group-hover:scale-110 transition-transform">
-              <KeyRound className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-white text-lg font-bold flex items-center gap-1.5">
-                I have an Invite Code <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </h2>
-              <p className="text-cs-gray-400 text-xs mt-1 leading-relaxed">
-                My host pre-registered me and sent me an invite code or link via WhatsApp.
-              </p>
-            </div>
-          </button>
-
-          {/* Option B: New Walk-in */}
-          <button
-            onClick={() => setFlow("new")}
-            className="w-full text-left bg-white/5 border border-white/10 hover:border-cs-red/50 hover:bg-white/10 transition-all p-5 rounded-2xl flex gap-4 items-start group shadow-sm"
-          >
-            <div className="p-3 bg-white/5 text-white rounded-xl group-hover:scale-110 transition-transform">
-              <UserPlus className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-white text-lg font-bold flex items-center gap-1.5">
-                I am a New Visitor <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </h2>
-              <p className="text-cs-gray-400 text-xs mt-1 leading-relaxed">
-                I do not have an invitation. I would like to register my details for a new visit.
-              </p>
-            </div>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. INVITE FLOW (Enter Code)
-  if (flow === "invite") {
-    return (
-      <div className="flex-1 flex flex-col p-6 max-w-md mx-auto w-full justify-center">
-        <button 
-          onClick={() => setFlow("select")}
-          className="inline-flex items-center gap-1 text-sm text-cs-gray-400 hover:text-white transition-colors self-start mb-8"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back
-        </button>
-
-        <div className="mb-8">
-          <h1 className="text-white text-2xl font-bold tracking-tight">Enter Invite Code</h1>
-          <p className="text-cs-gray-400 mt-1.5 text-sm">Please input the code you received via WhatsApp.</p>
-        </div>
-
-        <form onSubmit={handleInviteSubmit} className="space-y-5">
-          <div>
-            <label className="block text-xs font-semibold text-cs-gray-400 mb-2 uppercase tracking-wider">Invite Code</label>
-            <input 
-              required
-              autoFocus
-              type="text" 
-              value={inviteCode} 
-              onChange={(e) => setInviteCode(e.target.value)} 
-              placeholder="e.g. OS-A1B2"
-              autoCapitalize="characters"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-center text-white text-2xl font-mono tracking-widest placeholder:text-cs-gray-600 focus:outline-none focus:border-cs-red focus:ring-1 focus:ring-cs-red transition-all" 
-            />
-          </div>
-
-          <button 
-            disabled={isSubmitting || !inviteCode.trim()} 
-            type="submit" 
-            className="w-full bg-cs-red hover:bg-cs-red-dark text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-[0_0_20px_rgba(232,25,44,0.3)] disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Verifying...</>
-            ) : (
-              <>Verify & Check In <ArrowRight className="w-5 h-5" /></>
-            )}
-          </button>
-        </form>
-      </div>
-    );
-  }
-
-  // 3. NEW WALKIN FORM FLOW
-  return (
-    <div className="flex-1 flex flex-col p-6 max-w-md mx-auto w-full py-8">
-      <button 
-        onClick={() => setFlow("select")}
-        className="inline-flex items-center gap-1 text-sm text-cs-gray-400 hover:text-white transition-colors self-start mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back
-      </button>
-
-      <div className="mb-6">
-        <h1 className="text-white text-2xl font-bold tracking-tight">Visitor Details</h1>
-        <p className="text-cs-gray-400 mt-1.5 text-xs">Fill in your details to register your visit and generate your entry pass.</p>
-      </div>
-
-      <form onSubmit={handleWalkinSubmit} className="space-y-4 flex-1">
-        <div>
-          <label className="block text-[10px] font-semibold text-cs-gray-400 mb-1.5 uppercase tracking-wider">Full Name *</label>
-          <input required type="text" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-cs-gray-600 focus:outline-none focus:border-cs-red transition-colors" placeholder="John Doe" />
-        </div>
-        
-        <div>
-          <label className="block text-[10px] font-semibold text-cs-gray-400 mb-1.5 uppercase tracking-wider">Mobile Number *</label>
-          <div className="flex">
-            <span className="inline-flex items-center px-3.5 rounded-l-lg border border-r-0 border-white/10 bg-white/5 text-cs-gray-400 text-sm">
-              +91
-            </span>
-            <input required type="tel" pattern="[6789][0-9]{9}" title="Enter a valid 10-digit Indian phone number" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-r-lg px-4 py-2.5 text-white text-sm placeholder:text-cs-gray-600 focus:outline-none focus:border-cs-red transition-colors" placeholder="9876543210" />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-semibold text-cs-gray-400 mb-1.5 uppercase tracking-wider">Email Address *</label>
-          <input required type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-cs-gray-600 focus:outline-none focus:border-cs-red transition-colors" placeholder="john@example.com" />
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-semibold text-cs-gray-400 mb-1.5 uppercase tracking-wider">Company (Optional)</label>
-          <input type="text" value={form.company} onChange={(e) => setForm({...form, company: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-cs-gray-600 focus:outline-none focus:border-cs-red transition-colors" placeholder="Where do you work?" />
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-semibold text-cs-gray-400 mb-1.5 uppercase tracking-wider">Purpose of Visit *</label>
-          <select value={form.purpose} onChange={(e) => setForm({...form, purpose: e.target.value, hostName: e.target.value !== "Meeting" && e.target.value !== "Interview" ? "" : form.hostName})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cs-red transition-colors appearance-none bg-cs-black">
-            <option value="Enquiry">Workspace Enquiry / Tour</option>
-            <option value="Meeting">Meeting a Member</option>
-            <option value="Event">Attending an Event</option>
-            <option value="Interview">Interview</option>
-          </select>
-        </div>
-
-        {form.purpose === "Enquiry" && (
-          <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-            <label className="block text-[10px] font-semibold text-cs-gray-400 mb-1.5 uppercase tracking-wider">Interested In (Optional)</label>
-            <select value={form.planType} onChange={(e) => setForm({...form, planType: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cs-red transition-colors appearance-none bg-cs-black">
-              <option value="">Select a plan...</option>
-              <option value="Flexi">Flexi Desk</option>
-              <option value="Dedicated">Dedicated Desk</option>
-              <option value="Cabin">Private Cabin</option>
-              <option value="Day Pass">Day Pass</option>
-            </select>
+              <div className="pt-6">
+                <button disabled={isSubmitting} type="submit" className="w-full bg-cs-red hover:bg-cs-red-dark text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:shadow-none">
+                  {isSubmitting ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
+                  ) : (
+                    <>Register & Generate Pass <ArrowRight className="w-5 h-5" /></>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         )}
-
-        {(form.purpose === "Meeting" || form.purpose === "Interview") && (
-          <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-            <label className="block text-[10px] font-semibold text-cs-gray-400 mb-1.5 uppercase tracking-wider">Who are you meeting? *</label>
-            <select required value={form.hostName} onChange={(e) => setForm({...form, hostName: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cs-red transition-colors appearance-none bg-cs-black">
-              <option value="">Select a host...</option>
-              {members.map(m => (
-                <option key={m.id} value={m.name}>{m.name}</option>
-              ))}
-            </select>
-            <p className="text-[10px] text-cs-gray-500 mt-1">We will notify them of your arrival instantly.</p>
-          </div>
-        )}
-
-        <div className="pt-6">
-          <button disabled={isSubmitting} type="submit" className="w-full bg-cs-red hover:bg-cs-red-dark text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-[0_0_20px_rgba(232,25,44,0.3)] disabled:opacity-70 disabled:cursor-not-allowed">
-            {isSubmitting ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
-            ) : (
-              <>Register & Generate Pass <ArrowRight className="w-5 h-5" /></>
-            )}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

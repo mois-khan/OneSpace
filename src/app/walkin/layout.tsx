@@ -13,7 +13,7 @@ export default function WalkinLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`min-h-screen bg-cs-black flex flex-col ${inter.className}`}>
+    <div className={`min-h-screen bg-[#F8F6F4] flex flex-col ${inter.className}`}>
       {children}
     </div>
   );
