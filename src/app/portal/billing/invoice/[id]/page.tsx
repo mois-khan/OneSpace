@@ -80,7 +80,7 @@ export default function InvoicePrintPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             <tr>
-              <td className="py-4">Monthly Workspace Membership - {member.plan} Plan</td>
+              <td className="py-4">Monthly Workspace Membership - {member.planType.toUpperCase()} Plan</td>
               <td className="py-4 text-right">₹{invoice.amount.toLocaleString()}</td>
             </tr>
           </tbody>

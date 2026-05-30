@@ -46,6 +46,7 @@ export default function MemberProfilePage() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!member) return;
     if (!replyText.trim() && !attachment) return;
     sendMessage({
       conversationId: conversation?.id,

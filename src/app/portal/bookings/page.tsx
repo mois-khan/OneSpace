@@ -24,20 +24,20 @@ export default function PortalBookings() {
 
   // Bookings for this member
   const memberBookings = allBookings
-    .filter((b) => b.bookedBy === member.name)
-    .sort((a, b) => new Date(a.date + " " + a.startTime).getTime() - new Date(b.date + " " + b.startTime).getTime());
+    .filter((b) => b.memberId === member.id)
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     
   const upcomingBookings = memberBookings.filter((b) => {
-    return new Date(b.date + " " + b.startTime).getTime() >= Date.now();
+    return new Date(b.startTime).getTime() >= Date.now();
   });
   
   const pastBookings = memberBookings.filter((b) => {
-    return new Date(b.date + " " + b.startTime).getTime() < Date.now();
+    return new Date(b.startTime).getTime() < Date.now();
   });
 
   // Calculate if daily free credit is used
   // User gets 1 free hour per day. We check if they have already booked something on the selected date.
-  const hasBookedOnSelectedDate = memberBookings.some(b => b.date === date);
+  const hasBookedOnSelectedDate = memberBookings.some(b => b.startTime.startsWith(date));
   const hoursRequested = Math.max(1, parseInt(endTime) - parseInt(startTime));
   
   // If haven't booked on this date, 1st hour is free.
@@ -49,11 +49,14 @@ export default function PortalBookings() {
   const handleBook = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const startIso = new Date(`${date}T${startTime}:00`).toISOString();
+    const endIso = new Date(`${date}T${endTime}:00`).toISOString();
+    
     // Check conflicts
     const conflict = allBookings.find(
-      (b) => b.roomId === selectedRoom && b.date === date && 
-      ((startTime >= b.startTime && startTime < b.endTime) || 
-       (endTime > b.startTime && endTime <= b.endTime))
+      (b) => b.roomId === selectedRoom && 
+      ((startIso >= b.startTime && startIso < b.endTime) || 
+       (endIso > b.startTime && endIso <= b.endTime))
     );
 
     if (conflict) {
@@ -63,11 +66,12 @@ export default function PortalBookings() {
 
     createBooking({
       roomId: selectedRoom,
-      date,
-      startTime: startTime + " AM", // naive format for mock
-      endTime: endTime + " AM",
-      bookedBy: member.name,
+      startTime: startIso,
+      endTime: endIso,
+      memberId: member.id,
+      guestName: member.name,
       purpose: "Member Booking",
+      status: "confirmed"
     });
 
     toast.success("Room booked successfully!");
@@ -184,8 +188,8 @@ export default function PortalBookings() {
                   <div key={b.id} className="bg-white border border-cs-gray-200 rounded-2xl p-5 shadow-sm flex items-center justify-between">
                     <div>
                       <div className="font-bold text-cs-black text-lg">{allRooms.find(r => r.id === b.roomId)?.name || "Conference Room"}</div>
-                      <div className="text-cs-gray-500 text-sm mt-1">{format(new Date(b.date), "EEEE, MMMM d, yyyy")}</div>
-                      <div className="text-cs-gray-500 text-sm">{b.startTime} - {b.endTime}</div>
+                      <div className="text-cs-gray-500 text-sm mt-1">{format(new Date(b.startTime), "EEEE, MMMM d, yyyy")}</div>
+                      <div className="text-cs-gray-500 text-sm">{format(new Date(b.startTime), "h:mm a")} - {format(new Date(b.endTime), "h:mm a")}</div>
                     </div>
                     <span className="inline-flex items-center px-2.5 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">
                       Confirmed
@@ -210,8 +214,8 @@ export default function PortalBookings() {
                   <div key={b.id} className="bg-white border border-cs-gray-200 rounded-2xl p-5 shadow-sm flex items-center justify-between">
                     <div>
                       <div className="font-bold text-cs-black text-lg">{allRooms.find(r => r.id === b.roomId)?.name || "Conference Room"}</div>
-                      <div className="text-cs-gray-500 text-sm mt-1">{format(new Date(b.date), "EEEE, MMMM d, yyyy")}</div>
-                      <div className="text-cs-gray-500 text-sm">{b.startTime} - {b.endTime}</div>
+                      <div className="text-cs-gray-500 text-sm mt-1">{format(new Date(b.startTime), "EEEE, MMMM d, yyyy")}</div>
+                      <div className="text-cs-gray-500 text-sm">{format(new Date(b.startTime), "h:mm a")} - {format(new Date(b.endTime), "h:mm a")}</div>
                     </div>
                     <span className="inline-flex items-center px-2.5 py-1 rounded bg-cs-gray-100 text-cs-gray-500 text-xs font-semibold">
                       Completed
