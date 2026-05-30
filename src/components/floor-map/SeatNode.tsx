@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Seat } from "@/types";
 import { useAllMembers } from "@/lib/store";
 import { useAppState } from "@/lib/store/provider";
@@ -12,6 +12,7 @@ interface SeatNodeProps {
   onDragEnd?: (seatId: string, dx: number, dy: number) => void;
   scale: number;
   zoneType?: string;
+  onHover?: (seat: Seat | null) => void;
 }
 
 const statusColors: Record<Seat["status"], { bg: string; border: string; text: string; glow: string }> = {
@@ -21,64 +22,74 @@ const statusColors: Record<Seat["status"], { bg: string; border: string; text: s
   maintenance: { bg: "#F3F4F6", border: "#D1D5DB", text: "#6B7280", glow: "#9CA3AF" },
 };
 
-export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale, zoneType }: SeatNodeProps) {
+export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale, zoneType, onHover }: SeatNodeProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState({ dx: 0, dy: 0 });
   const [isHovered, setIsHovered] = useState(false);
+  
   const colors = statusColors[seat.status];
-  const allMembers = useAllMembers();
-  const { invoices } = useAppState();
-
-  const memberInfo = seat.memberId ? allMembers.find((m) => m.id === seat.memberId) : null;
 
   const isRoom = seat.code.startsWith("CONF") || seat.code.startsWith("PB");
   const seatW = seat.width;
   const seatH = seat.height;
 
-  const paymentStatus = useMemo(() => {
-    if (seat.status !== "occupied" || !seat.memberId) return null;
-    const memberInvoices = invoices.filter(inv => inv.memberId === seat.memberId);
-    if (memberInvoices.length === 0) return "pending";
-    const sorted = [...memberInvoices].sort((a, b) => new Date(b.dueAt || 0).getTime() - new Date(a.dueAt || 0).getTime());
-    return sorted[0].status;
-  }, [invoices, seat.memberId, seat.status]);
-
-  // Compute fake contract days left
-  const contractDays = useMemo(() => {
-    if (seat.status !== "occupied" || !seat.memberId) return 0;
-    const seed = parseInt(seat.memberId.replace(/\D/g, "")) || 0;
-    return (seed * 37) % 180 + 10;
-  }, [seat.status, seat.memberId]);
-
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
-  }, []);
-
-  const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    if (isDragging && dragStart && onDragEnd) {
-      const dx = (e.clientX - dragStart.x) / scale;
-      const dy = (e.clientY - dragStart.y) / scale;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-        onDragEnd(seat.id, dx, dy);
-      } else {
-        onSelect(seat);
-      }
-    } else {
-      onSelect(seat);
+    if (onDragEnd) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+      setDragOffset({ dx: 0, dy: 0 });
     }
-    setIsDragging(false);
-    setDragStart(null);
-  }, [isDragging, dragStart, onDragEnd, scale, seat, onSelect]);
+  }, [onDragEnd]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (dragStart) {
+        setDragOffset({
+          dx: (e.clientX - dragStart.x) / scale,
+          dy: (e.clientY - dragStart.y) / scale,
+        });
+      }
+    };
+
+    const handleMouseUpGlobal = (e: MouseEvent) => {
+      if (dragStart && onDragEnd) {
+        const dx = (e.clientX - dragStart.x) / scale;
+        const dy = (e.clientY - dragStart.y) / scale;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          onDragEnd(seat.id, dx, dy);
+        } else {
+          onSelect(seat);
+        }
+      }
+      setIsDragging(false);
+      setDragStart(null);
+      setDragOffset({ dx: 0, dy: 0 });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUpGlobal);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUpGlobal);
+    };
+  }, [isDragging, dragStart, scale, onDragEnd, seat, onSelect]);
 
   return (
     <g
-      transform={`translate(${seat.x}, ${seat.y})`}
+      transform={`translate(${seat.x + dragOffset.dx}, ${seat.y + dragOffset.dy})`}
       onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => { setIsHovered(false); }}
+      onClick={(e) => {
+        if (!onDragEnd) {
+          e.stopPropagation();
+          onSelect(seat);
+        }
+      }}
+      onMouseEnter={() => { setIsHovered(true); onHover?.(seat); }}
+      onMouseLeave={() => { setIsHovered(false); onHover?.(null); }}
       style={{ cursor: onDragEnd ? (isDragging ? "grabbing" : "grab") : "pointer" }}
       className={onDragEnd ? "panning-disabled" : ""}
     >
@@ -250,120 +261,137 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale, zoneTyp
           <animate attributeName="r" values="3;3.5;3" dur="3s" repeatCount="indefinite" />
         )}
       </circle>
+    </g>
+  );
+}
 
-      {/* Hover Tooltip — richer when occupied */}
-      {isHovered && (
-        <g>
-          {(() => {
-            const lines: Array<{ text: string; color: string; size: number; weight: number }> = [];
-            lines.push({ text: seat.code, color: "#fff", size: 10, weight: 700 });
-            lines.push({
-              text: seat.status.charAt(0).toUpperCase() + seat.status.slice(1),
-              color: "#94A3B8",
-              size: 8.5,
-              weight: 400,
-            });
-            if (memberInfo) {
-              lines.push({ text: memberInfo.name, color: "#E2E8F0", size: 9.5, weight: 600 });
-              const plan = memberInfo.planType.replace("_", " ");
-              lines.push({
-                text: `${plan} · ₹${(memberInfo.monthlyFee / 1000).toFixed(1)}k/mo`,
-                color: "#94A3B8",
-                size: 8.5,
-                weight: 400,
-              });
-              if (memberInfo.company) {
-                lines.push({
-                  text: memberInfo.company,
-                  color: "#94A3B8",
-                  size: 8,
-                  weight: 400,
-                });
-              }
-              // Payment & Contract
-              lines.push({
-                text: `Payment: ${paymentStatus || "Unknown"}`,
-                color: paymentStatus === "overdue" ? "#FCA5A5" : paymentStatus === "paid" ? "#86EFAC" : "#FCD34D",
-                size: 8,
-                weight: 500,
-              });
-              lines.push({
-                text: `Contract: ${contractDays}d left`,
-                color: contractDays < 30 ? "#FCA5A5" : "#94A3B8",
-                size: 8,
-                weight: 500,
-              });
-            }
-            const rowH = 13;
-            const padY = 10;
-            const boxH = lines.length * rowH + padY;
-            const isNearTop = seat.y < boxH + 20;
-            const boxY = isNearTop ? 6 : -boxH - 6;
-            const toolTipY = isNearTop ? seatH + 8 : -8;
-            
-            return (
-              <g transform={`translate(${seatW / 2}, ${toolTipY})`}>
-                <rect
-                  x={-85}
-                  y={boxY}
-                  width={170}
-                  height={boxH}
-                  rx={8}
-                  fill="#0D1B2A"
-                  opacity={0.95}
-                />
-                <polygon 
-                  points={isNearTop ? "-5,6 5,6 0,0" : "-5,-1 5,-1 0,4"} 
-                  fill="#0D1B2A" 
-                  opacity={0.95} 
-                />
-                {lines.map((l, i) => {
-                  if (i === 2 && memberInfo) {
-                    // Divider above the member name
-                    return (
-                      <g key={`g-${i}`}>
-                        <line
-                          x1={-68}
-                          y1={boxY + padY / 2 + i * rowH - 3}
-                          x2={68}
-                          y2={boxY + padY / 2 + i * rowH - 3}
-                          stroke="#334155"
-                          strokeWidth={0.5}
-                        />
-                        <text
-                          x={0}
-                          y={boxY + padY / 2 + i * rowH + 6}
-                          textAnchor="middle"
-                          fill={l.color}
-                          fontSize={l.size}
-                          fontWeight={l.weight}
-                          fontFamily="Inter, sans-serif"
-                        >
-                          {l.text}
-                        </text>
-                      </g>
-                    );
-                  }
-                  return (
-                    <text
-                      key={`t-${i}`}
-                      x={0}
-                      y={boxY + padY / 2 + i * rowH + 6}
-                      textAnchor="middle"
-                      fill={l.color}
-                      fontSize={l.size}
-                      fontWeight={l.weight}
-                      fontFamily="Inter, sans-serif"
-                    >
-                      {l.text}
-                    </text>
-                  );
-                })}
-              </g>
-            );
-          })()}
-        </g>
-      )}
+// ----------------------------------------------------
+// Extracted Tooltip so it can be rendered above all seats
+// ----------------------------------------------------
+
+export function SeatTooltip({ seat }: { seat: Seat }) {
+  const allMembers = useAllMembers();
+  const { invoices } = useAppState();
+
+  const memberInfo = seat.memberId ? allMembers.find((m) => m.id === seat.memberId) : null;
+
+  const paymentStatus = useMemo(() => {
+    if (seat.status !== "occupied" || !seat.memberId) return null;
+    const memberInvoices = invoices.filter(inv => inv.memberId === seat.memberId);
+    if (memberInvoices.length === 0) return "pending";
+    const sorted = [...memberInvoices].sort((a, b) => new Date(b.dueAt || 0).getTime() - new Date(a.dueAt || 0).getTime());
+    return sorted[0].status;
+  }, [invoices, seat.memberId, seat.status]);
+
+  const contractDays = useMemo(() => {
+    if (seat.status !== "occupied" || !seat.memberId) return 0;
+    const seed = parseInt(seat.memberId.replace(/\D/g, "")) || 0;
+    return (seed * 37) % 180 + 10;
+  }, [seat.status, seat.memberId]);
+
+  const lines: Array<{ text: string; color: string; size: number; weight: number }> = [];
+  lines.push({ text: seat.code, color: "#fff", size: 10, weight: 700 });
+  lines.push({
+    text: seat.status.charAt(0).toUpperCase() + seat.status.slice(1),
+    color: "#94A3B8",
+    size: 8.5,
+    weight: 400,
+  });
+  if (memberInfo) {
+    lines.push({ text: memberInfo.name, color: "#E2E8F0", size: 9.5, weight: 600 });
+    const plan = memberInfo.planType.replace("_", " ");
+    lines.push({
+      text: `${plan} · ₹${(memberInfo.monthlyFee / 1000).toFixed(1)}k/mo`,
+      color: "#94A3B8",
+      size: 8.5,
+      weight: 400,
+    });
+    if (memberInfo.company) {
+      lines.push({
+        text: memberInfo.company,
+        color: "#94A3B8",
+        size: 8,
+        weight: 400,
+      });
+    }
+    lines.push({
+      text: `Payment: ${paymentStatus || "Unknown"}`,
+      color: paymentStatus === "overdue" ? "#FCA5A5" : paymentStatus === "paid" ? "#86EFAC" : "#FCD34D",
+      size: 8,
+      weight: 500,
+    });
+    lines.push({
+      text: `Contract: ${contractDays}d left`,
+      color: contractDays < 30 ? "#FCA5A5" : "#94A3B8",
+      size: 8,
+      weight: 500,
+    });
+  }
+  
+  const rowH = 13;
+  const padY = 10;
+  const boxH = lines.length * rowH + padY;
+  const isNearTop = seat.y < boxH + 20;
+  const boxY = isNearTop ? 6 : -boxH - 6;
+  const toolTipY = isNearTop ? seat.height + 8 : -8;
+
+  return (
+    <g transform={`translate(${seat.x + seat.width / 2}, ${seat.y + toolTipY})`} style={{ pointerEvents: "none" }}>
+      <rect
+        x={-85}
+        y={boxY}
+        width={170}
+        height={boxH}
+        rx={8}
+        fill="#0D1B2A"
+        opacity={0.95}
+      />
+      <polygon 
+        points={isNearTop ? "-5,6 5,6 0,0" : "-5,-1 5,-1 0,4"} 
+        fill="#0D1B2A" 
+        opacity={0.95} 
+      />
+      {lines.map((l, i) => {
+        if (i === 2 && memberInfo) {
+          return (
+            <g key={`g-${i}`}>
+              <line
+                x1={-68}
+                y1={boxY + padY / 2 + i * rowH - 3}
+                x2={68}
+                y2={boxY + padY / 2 + i * rowH - 3}
+                stroke="#334155"
+                strokeWidth={0.5}
+              />
+              <text
+                x={0}
+                y={boxY + padY / 2 + i * rowH + 6}
+                textAnchor="middle"
+                fill={l.color}
+                fontSize={l.size}
+                fontWeight={l.weight}
+                fontFamily="Inter, sans-serif"
+              >
+                {l.text}
+              </text>
+            </g>
+          );
+        }
+        return (
+          <text
+            key={`t-${i}`}
+            x={0}
+            y={boxY + padY / 2 + i * rowH + 6}
+            textAnchor="middle"
+            fill={l.color}
+            fontSize={l.size}
+            fontWeight={l.weight}
+            fontFamily="Inter, sans-serif"
+          >
+            {l.text}
+          </text>
+        );
+      })}
     </g>
   );
 }

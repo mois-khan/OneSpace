@@ -4,7 +4,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import { Seat, Zone } from "@/types";
 import { ZoneNode } from "./ZoneNode";
-import { SeatNode } from "./SeatNode";
+import { SeatNode, SeatTooltip } from "./SeatNode";
 import type { ZoneCategory } from "./MapControls";
 
 interface MapContainerProps {
@@ -68,6 +68,7 @@ export function MapContainer({
   isEditMode = false,
 }: MapContainerProps) {
   const [scale, setScale] = useState(1);
+  const [hoveredSeat, setHoveredSeat] = useState<Seat | null>(null);
 
   const handleDragEnd = useCallback(
     (seatId: string, dx: number, dy: number) => {
@@ -245,9 +246,15 @@ export function MapContainer({
                   onDragEnd={isEditMode ? handleDragEnd : undefined}
                   scale={scale}
                   zoneType={zoneIdToType.get(seat.zoneId)}
+                  onHover={setHoveredSeat}
                 />
               );
             })}
+
+            {/* ──── TOOLTIPS ──── */}
+            {hoveredSeat && (
+              <SeatTooltip seat={hoveredSeat} />
+            )}
 
             {/* ──── WATERMARK ──── */}
             <text

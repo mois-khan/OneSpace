@@ -178,7 +178,7 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
 
       // 2. Update local seats state — mark seat as occupied
       setFloorSeats((prev) => {
-        const currSeats = prev[currentFloorId] || activeFloor.seats;
+        const currSeats = prev[currentFloorId] || activeFloor?.seats || [];
         return {
           ...prev,
           [currentFloorId]: currSeats.map((s: Seat) =>
@@ -194,7 +194,7 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
         description: `${payload.planType} plan · ₹${(payload.monthlyFee / 1000).toFixed(0)}k/mo`,
       });
     },
-    [onboardMember, selectedSeat, currentFloorId, activeFloor.seats],
+    [onboardMember, selectedSeat, currentFloorId, activeFloor?.seats],
   );
 
   if (!floorPlan || !activeFloor) return null;
@@ -239,11 +239,13 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
               <DesignerSidebar
                 onAddComponent={(type) => {
                   if (!activeFloor) return;
+                  const offsetX = (zones.length * 30) % 300 - 150;
+                  const offsetY = (zones.length * 30) % 300 - 150;
                   const { zone, seats: newSeats } = buildDesignerComponent(
                     type,
                     branchId,
-                    activeFloor?.canvasWidth ? activeFloor.canvasWidth / 2 : 400,
-                    activeFloor?.canvasHeight ? activeFloor.canvasHeight / 2 : 300,
+                    (activeFloor?.canvasWidth ? activeFloor.canvasWidth / 2 : 400) + offsetX,
+                    (activeFloor?.canvasHeight ? activeFloor.canvasHeight / 2 : 300) + offsetY,
                     seats.length
                   );
                   handleZonesUpdate([...zones, zone]);

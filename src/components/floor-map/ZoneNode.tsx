@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Zone } from "@/types";
 import { zoneIcons } from "@/lib/data/floor-plan";
 import { Trash2 } from "lucide-react";
@@ -16,6 +16,7 @@ interface ZoneNodeProps {
 export function ZoneNode({ zone, isEditMode, onDragEnd, onDelete, scale }: ZoneNodeProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState({ dx: 0, dy: 0 });
   const [isSelected, setIsSelected] = useState(false);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -24,20 +25,41 @@ export function ZoneNode({ zone, isEditMode, onDragEnd, onDelete, scale }: ZoneN
     setIsDragging(true);
     setIsSelected(true);
     setDragStart({ x: e.clientX, y: e.clientY });
+    setDragOffset({ dx: 0, dy: 0 });
   }, [isEditMode]);
 
-  const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    if (!isEditMode) return;
-    if (isDragging && dragStart && onDragEnd) {
-      const dx = (e.clientX - dragStart.x) / scale;
-      const dy = (e.clientY - dragStart.y) / scale;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-        onDragEnd(zone.id, dx, dy);
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (dragStart) {
+        setDragOffset({
+          dx: (e.clientX - dragStart.x) / scale,
+          dy: (e.clientY - dragStart.y) / scale,
+        });
       }
-    }
-    setIsDragging(false);
-    setDragStart(null);
-  }, [isDragging, dragStart, onDragEnd, scale, zone.id, isEditMode]);
+    };
+
+    const handleMouseUpGlobal = (e: MouseEvent) => {
+      if (dragStart && onDragEnd) {
+        const dx = (e.clientX - dragStart.x) / scale;
+        const dy = (e.clientY - dragStart.y) / scale;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          onDragEnd(zone.id, dx, dy);
+        }
+      }
+      setIsDragging(false);
+      setDragStart(null);
+      setDragOffset({ dx: 0, dy: 0 });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUpGlobal);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUpGlobal);
+    };
+  }, [isDragging, dragStart, scale, onDragEnd, zone.id]);
 
   // Click away to deselect
   React.useEffect(() => {
@@ -50,9 +72,8 @@ export function ZoneNode({ zone, isEditMode, onDragEnd, onDelete, scale }: ZoneN
 
   return (
     <g
-      transform={`translate(${zone.x}, ${zone.y})`}
+      transform={`translate(${zone.x + dragOffset.dx}, ${zone.y + dragOffset.dy})`}
       onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
       style={{ cursor: isEditMode ? (isDragging ? "grabbing" : "grab") : "default" }}
       className={isEditMode ? "panning-disabled" : ""}
     >
