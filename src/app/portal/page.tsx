@@ -19,11 +19,11 @@ export default function PortalDashboard() {
   
   // Filter bookings for this member
   const memberBookings = allBookings
-    .filter((b) => b.bookedBy === member.name)
-    .sort((a, b) => new Date(a.date + " " + a.startTime).getTime() - new Date(b.date + " " + b.startTime).getTime());
+    .filter((b) => b.memberId === member.id)
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     
   const upcomingBookings = memberBookings.filter((b) => {
-    const bookingDate = new Date(b.date + " " + b.startTime);
+    const bookingDate = new Date(b.startTime);
     return bookingDate.getTime() >= Date.now(); // naive check, using real Date.now() for portal
   });
   
@@ -81,8 +81,8 @@ export default function PortalDashboard() {
               <div>
                 <div className="text-xs text-cs-gray-400 font-semibold uppercase tracking-wider mb-1">Date & Time</div>
                 <div className="font-medium text-cs-black">
-                  {format(new Date(nextBooking.date), "MMM d, yyyy")} <br/>
-                  <span className="text-cs-gray-500 text-sm">{nextBooking.startTime} - {nextBooking.endTime}</span>
+                  {format(new Date(nextBooking.startTime), "MMM d, yyyy")} <br/>
+                  <span className="text-cs-gray-500 text-sm">{format(new Date(nextBooking.startTime), "h:mm a")} - {format(new Date(nextBooking.endTime), "h:mm a")}</span>
                 </div>
               </div>
             </div>
