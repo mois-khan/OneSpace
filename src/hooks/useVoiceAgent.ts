@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { useAllMembers, useTickets, useAllBookings, useBranches, useInvoices, useVisitors } from "@/lib/store";
+import { useAllMembers, useTickets, useAllBookings, useBranches, useInvoices, useVisitors, useBranchPerformance, useLeads } from "@/lib/store";
 
 export function useVoiceAgent() {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,6 +20,8 @@ export function useVoiceAgent() {
   const bookings = useAllBookings();
   const invoices = useInvoices();
   const visitors = useVisitors();
+  const branchPerformance = useBranchPerformance();
+  const leads = useLeads();
   
   const mrr = members.reduce((acc, m) => acc + (m.status === 'active' ? m.monthlyFee : 0), 0);
   const overdueInvoices = invoices.filter(i => i.status === "overdue").length;
@@ -63,7 +65,9 @@ export function useVoiceAgent() {
             averageRisk: Math.round(members.reduce((acc, m) => acc + (m.riskScore || 0), 0) / (members.length || 1)),
             recentVisitors: visitors.length,
             overdueInvoices,
-            totalBookings: bookings.length
+            totalBookings: bookings.length,
+            totalLeads: leads.length,
+            branchPerformance: branchPerformance.map(b => `${b.branchName}: ₹${b.revenue.toLocaleString()} Revenue, ${b.occupancy}% Occupancy`)
           }
         }),
       });
