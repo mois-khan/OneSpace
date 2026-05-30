@@ -1,0 +1,65 @@
+import { NextResponse } from "next/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Ensure API key is present
+const apiKey = process.env.GEMINI_API_KEY;
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+
+export async function POST(req: Request) {
+  try {
+    if (!genAI) {
+      return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 500 });
+    }
+
+    const body = await req.json();
+    const { message, context, history } = body;
+
+    if (!message) {
+      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Construct the system prompt using the context passed from the client
+    const systemPrompt = `You are JARVIS, the exclusive AI assistant for the Workspace Owner of OneSpace. 
+You speak directly, concisely, and professionally. Avoid markdown, lists, or long paragraphs because your response will be spoken aloud via text-to-speech. Keep it conversational.
+
+Here is the current live data for the workspace:
+- Branches: ${context?.branches || 0}
+- Total Members: ${context?.totalMembers || 0}
+- Current MRR: $${context?.mrr?.toLocaleString() || 0}
+- Overall Risk Score: ${context?.averageRisk || 0}/100
+- Open Support Tickets: ${context?.openTickets || 0}
+- Recent Visitors: ${context?.recentVisitors || 0}
+
+Answer the owner's query based on this data.`;
+
+    const chat = model.startChat({
+      history: [
+        {
+          role: "user",
+          parts: [{ text: systemPrompt }],
+        },
+        {
+          role: "model",
+          parts: [{ text: "Understood. I am ready to assist the owner." }],
+        },
+        ...(history || []).map((msg: any) => ({
+          role: msg.role === "user" ? "user" : "model",
+          parts: [{ text: msg.text }],
+        }))
+      ],
+      generationConfig: {
+        maxOutputTokens: 150, // Keep responses short for voice
+      },
+    });
+
+    const result = await chat.sendMessage([{ text: message }]);
+    const responseText = result.response.text();
+
+    return NextResponse.json({ text: responseText });
+  } catch (error: any) {
+    console.error("Gemini API Error:", error);
+    return NextResponse.json({ error: error.message || "Failed to process AI request" }, { status: 500 });
+  }
+}

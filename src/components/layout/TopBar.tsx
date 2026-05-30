@@ -16,6 +16,7 @@ import { CommandPalette } from "./CommandPalette";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { ProfileMenu } from "./ProfileMenu";
 import { RoleSwitcher } from "./RoleSwitcher";
+import { VoiceAgent } from "../ai/VoiceAgent";
 
 function getPageTitle(pathname: string) {
   if (pathname.startsWith("/dashboard")) return "Dashboard";
@@ -131,6 +132,8 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
         >
           <Search className="w-4 h-4" />
         </button>
+
+        <VoiceAgent />
 
         <div className="relative">
           <button
