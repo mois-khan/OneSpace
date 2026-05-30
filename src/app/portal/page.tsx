@@ -1,6 +1,6 @@
 "use client";
 
-import { usePortalMember, useInvoices, useAllBookings, useRooms } from "@/lib/store/hooks";
+import { usePortalMember, useInvoices, useAllBookings, useRooms } from "@/lib/store";
 import { CreditCard, Calendar, DoorOpen } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";

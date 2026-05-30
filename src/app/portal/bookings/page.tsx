@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePortalMember, useRooms, useAllBookings, useAppActions } from "@/lib/store/hooks";
+import { usePortalMember, useRooms, useAllBookings, useAppActions } from "@/lib/store";
 import { format } from "date-fns";
 import { Calendar, Clock, CreditCard, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";

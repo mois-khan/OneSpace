@@ -1,6 +1,6 @@
 "use client";
 
-import { usePortalMember, useAppActions } from "@/lib/store/hooks";
+import { usePortalMember, useAppActions } from "@/lib/store";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";

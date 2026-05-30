@@ -1,6 +1,6 @@
 "use client";
 
-import { usePortalMember, useInvoices } from "@/lib/store/hooks";
+import { usePortalMember, useInvoices } from "@/lib/store";
 import { format } from "date-fns";
 import { Download, CreditCard, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -48,7 +48,7 @@ export default function PortalBilling() {
                     {memberInvoices.map((inv) => (
                       <tr key={inv.id} className="hover:bg-cs-gray-50 transition-colors">
                         <td className="px-6 py-4 font-medium text-cs-black">{inv.id.toUpperCase()}</td>
-                        <td className="px-6 py-4">{format(new Date(inv.dueDate), "MMM d, yyyy")}</td>
+                        <td className="px-6 py-4">{format(new Date(inv.dueAt), "MMM d, yyyy")}</td>
                         <td className="px-6 py-4 font-medium">₹{inv.amount.toLocaleString()}</td>
                         <td className="px-6 py-4">
                           <span className={cn(
@@ -95,7 +95,7 @@ export default function PortalBilling() {
                 <span className="text-cs-gray-500">Next Due Date</span>
                 <span className="font-medium text-cs-black">
                   {pendingInvoices.length > 0 
-                    ? format(new Date(pendingInvoices.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0].dueDate), "MMM d, yyyy")
+                    ? format(new Date(pendingInvoices.sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0].dueAt), "MMM d, yyyy")
                     : "-"}
                 </span>
               </div>

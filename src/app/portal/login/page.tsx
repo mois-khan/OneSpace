@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAllMembers, useAppActions } from "@/lib/store/hooks";
+import { useAllMembers, useAppActions } from "@/lib/store";
 import { Building2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 

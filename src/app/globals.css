@@ -140,6 +140,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    cursor: url('/cursor.svg') 3 2, auto;
   }
   button, 
   a, 
@@ -147,5 +148,6 @@
   [type="button"], 
   [type="submit"] {
     @apply cursor-pointer;
+    cursor: url('/cursor-pointer.svg') 9 3, pointer !important;
   }
 }
