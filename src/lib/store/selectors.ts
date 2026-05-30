@@ -11,6 +11,8 @@ import type {
   Room,
   Visitor,
   FloorPlan,
+  Ticket,
+  Conversation,
 } from "@/types";
 import { generateFloorPlan } from "@/lib/data/floor-plan";
 
@@ -25,6 +27,8 @@ export interface AppState {
   bookings: Booking[];
   rooms: Room[];
   invoices: Invoice[];
+  tickets: Ticket[];
+  conversations: Conversation[];
   notifications: Notification[];
   activity: ActivityEvent[];
   floorPlans: Record<string, FloorPlan>;
@@ -42,6 +46,7 @@ export function filterByBranch<T extends { branchId?: string }>(
   list: T[],
   branchId: string,
 ): T[] {
+  if (!list) return [];
   if (branchId === "all") return list;
   return list.filter((x) => x.branchId === branchId);
 }
@@ -53,6 +58,12 @@ export const selectMembers = (s: AppState, branchId: string = s.selectedBranchId
 
 export const selectLeads = (s: AppState, branchId: string = s.selectedBranchId) =>
   filterByBranch(s.leads, branchId);
+
+export const selectTickets = (s: AppState, branchId: string = s.selectedBranchId) =>
+  filterByBranch(s.tickets || [], branchId);
+
+export const selectConversations = (s: AppState, branchId: string = s.selectedBranchId) =>
+  filterByBranch(s.conversations || [], branchId);
 
 export const selectVisitors = (s: AppState, branchId: string = s.selectedBranchId) =>
   filterByBranch(s.visitors, branchId);

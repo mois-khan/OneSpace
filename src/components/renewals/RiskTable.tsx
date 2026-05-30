@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useNow } from "@/lib/store";
+import { useNow, useTickets } from "@/lib/store";
 
 interface RiskTableProps {
   members: Member[];
@@ -52,7 +52,10 @@ export function RiskTable({
   const getDaysLeft = (endDate: string) =>
     Math.ceil((new Date(endDate).getTime() - now) / DAY);
 
+  const allTickets = useTickets();
+
   const getFactors = (member: Member): RiskFactor[] => {
+    const memberTickets = allTickets.filter(t => t.memberId === member.id);
     const out: RiskFactor[] = [];
     const days = getDaysLeft(member.contractEnd);
     if (days <= 0) {
@@ -75,10 +78,10 @@ export function RiskTable({
         tone: "info",
       });
     }
-    if (member.tickets && member.tickets.length > 0) {
+    if (memberTickets.length > 0) {
       out.push({
         icon: Ticket,
-        label: `${member.tickets.length} open ticket${member.tickets.length === 1 ? "" : "s"}`,
+        label: `${memberTickets.length} open ticket${memberTickets.length === 1 ? "" : "s"}`,
         tone: "warning",
       });
     }

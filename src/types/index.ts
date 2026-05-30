@@ -19,7 +19,6 @@ export interface Member {
   status: "active" | "trial" | "expiring" | "churned";
   seatId?: string;
   riskScore?: number;
-  tickets: Ticket[];
   invoices: Invoice[];
   memberSince?: string;
   monthsAsMember?: number;
@@ -27,10 +26,30 @@ export interface Member {
   avgVisitsPerMonth?: number;
 }
 
+export type TicketCategory = "IT" | "Maintenance" | "Housekeeping" | "Billing" | "Other";
+export type TicketPriority = "low" | "medium" | "high" | "urgent";
+
+export interface TicketComment {
+  id: string;
+  author: string;
+  text: string;
+  timestamp: string;
+  isStaff: boolean;
+}
+
 export interface Ticket {
   id: string;
+  memberId: string;
+  branchId: string;
   title: string;
+  description: string;
+  category: TicketCategory;
+  priority: TicketPriority;
   status: "open" | "in_progress" | "resolved" | "closed";
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: string;
+  comments: TicketComment[];
 }
 
 export interface Invoice {
@@ -45,6 +64,22 @@ export interface Invoice {
   dueAt: string;
   /** ISO timestamp when invoice was paid (if any) */
   paidAt?: string;
+}
+
+export interface Message {
+  id: string;
+  senderId: string; // member.id or 'admin'
+  text: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  memberId: string;
+  branchId: string;
+  messages: Message[];
+  lastMessageAt: string;
 }
 
 export interface Seat {

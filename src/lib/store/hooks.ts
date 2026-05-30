@@ -16,6 +16,8 @@ import {
   selectRenewalsDue,
   selectRooms,
   selectSearch,
+  selectTickets,
+  selectConversations,
   selectTodayFocus,
   selectUnreadNotificationCount,
   selectVisitHistoryByPhone,
@@ -148,4 +150,14 @@ export function usePortalMember() {
   const state = useAppState();
   if (!state.portalLoggedInMemberId) return null;
   return state.members.find((m) => m.id === state.portalLoggedInMemberId) || null;
+}
+
+export function useTickets(branchId?: string) {
+  const s = useAppState();
+  return useMemo(() => selectTickets(s, branchId), [s, branchId]);
+}
+
+export function useConversations(branchId?: string) {
+  const s = useAppState();
+  return useMemo(() => selectConversations(s, branchId), [s, branchId]);
 }

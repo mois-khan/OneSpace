@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useAllMembers, useBranches, useAppActions } from "@/lib/store";
+import { useAllMembers, useBranches, useAppActions, useTickets } from "@/lib/store";
 import { RiskGauge } from "@/components/members/RiskGauge";
 import { AIEmailModal } from "@/components/members/AIEmailModal";
 import {
@@ -28,11 +28,13 @@ export default function MemberProfilePage() {
   const members = useAllMembers();
   const branches = useBranches();
   const { renewMember } = useAppActions();
+  const allTickets = useTickets();
   const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "invoices" | "tickets">("overview");
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   const memberId = params.id as string;
   const member = members.find((m) => m.id === memberId);
+  const memberTickets = allTickets.filter(t => t.memberId === memberId);
 
   if (!member) {
     return (
@@ -108,12 +110,12 @@ export default function MemberProfilePage() {
               </span>
             </li>
             <li className="flex items-start gap-2 text-sm text-cs-gray-700">
-              {member.tickets.length > 0 ? (
+              {memberTickets.length > 0 ? (
                 <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
               ) : (
                 <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
               )}
-              <span>{member.tickets.length} open support ticket{member.tickets.length === 1 ? "" : "s"}</span>
+              <span>{memberTickets.length} open support ticket{memberTickets.length === 1 ? "" : "s"}</span>
             </li>
             <li className="flex items-start gap-2 text-sm text-cs-gray-700">
               <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
@@ -261,7 +263,7 @@ export default function MemberProfilePage() {
                 </button>
               </div>
 
-              {member.tickets.length > 0 ? (
+              {memberTickets.length > 0 ? (
                 <div className="bg-white border border-cs-gray-200 rounded-xl overflow-hidden">
                   <table className="w-full text-sm text-left">
                     <thead className="bg-cs-gray-50 text-xs uppercase text-cs-gray-500 border-b border-cs-gray-200">
@@ -272,7 +274,7 @@ export default function MemberProfilePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-cs-gray-100">
-                      {member.tickets.map((t) => (
+                      {memberTickets.map((t) => (
                         <tr key={t.id} className="hover:bg-cs-gray-50/50">
                           <td className="px-6 py-4 font-medium text-cs-black">{t.title}</td>
                           <td className="px-6 py-4">

@@ -9,6 +9,9 @@ import type {
   Notification,
   ActivityEvent,
   PreRegistration,
+  Ticket,
+  Conversation,
+  Message,
 } from "@/types";
 import { generateFloorPlan } from "@/lib/data/floor-plan";
 import { hashSeed, intBetween, makeRng, pick } from "./rng";
@@ -115,9 +118,6 @@ export function generateMembers(now: number): Member[] {
         contractEnd: new Date(contractEndMs).toISOString(),
         status,
         seatId: seat.id,
-        tickets: ticketCount
-          ? [{ id: `tk-${memberId}`, title: "Network issue", status: "open" }]
-          : [],
         invoices: [],
         daysSinceLastVisit,
         avgVisitsPerMonth,
@@ -193,6 +193,82 @@ export function generateInvoices(now: number, members: Member[]): Invoice[] {
   }
 
   return invoices;
+}
+
+export function generateTickets(now: number, members: Member[]): Ticket[] {
+  const tickets: Ticket[] = [];
+  
+  for (const member of members) {
+    const rng = makeRng(hashSeed(member.id + ":tk"));
+    if (rng() < 0.15) {
+      const isResolved = rng() > 0.5;
+      tickets.push({
+        id: `tk-${member.id}`,
+        memberId: member.id,
+        branchId: member.branchId,
+        title: "Network connectivity issue in cabin",
+        description: "The wifi keeps dropping out since yesterday afternoon. Please check the access point.",
+        category: "IT",
+        priority: rng() > 0.8 ? "high" : "medium",
+        status: isResolved ? "resolved" : "open",
+        createdAt: new Date(now - (rng() * 10) * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(now).toISOString(),
+        comments: [
+          {
+            id: `tc-${member.id}-1`,
+            author: member.name,
+            text: "Wifi is dropping constantly.",
+            timestamp: new Date(now - 24 * 60 * 60 * 1000).toISOString(),
+            isStaff: false,
+          }
+        ],
+      });
+    }
+  }
+
+  return tickets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export function generateConversations(now: number, members: Member[]): Conversation[] {
+  const conversations: Conversation[] = [];
+  
+  for (const member of members) {
+    const rng = makeRng(hashSeed(member.id + ":conv"));
+    // 30% chance a member has a chat conversation
+    if (rng() < 0.3) {
+      conversations.push({
+        id: `conv-${member.id}`,
+        memberId: member.id,
+        branchId: member.branchId,
+        lastMessageAt: new Date(now - (rng() * 5) * 24 * 60 * 60 * 1000).toISOString(),
+        messages: [
+          {
+            id: `msg-${member.id}-1`,
+            senderId: member.id,
+            text: "Hi, I have a quick question about adding a new team member to my plan.",
+            timestamp: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            read: true,
+          },
+          {
+            id: `msg-${member.id}-2`,
+            senderId: "admin",
+            text: "Hello! We can certainly help with that. Since you are on a cabin plan, we can add a flexi pass to your account. Would that work?",
+            timestamp: new Date(now - 2.9 * 24 * 60 * 60 * 1000).toISOString(),
+            read: true,
+          },
+          {
+            id: `msg-${member.id}-3`,
+            senderId: member.id,
+            text: "Yes, that's perfect. How much is the flexi pass?",
+            timestamp: new Date(now - (rng() * 5) * 24 * 60 * 60 * 1000).toISOString(),
+            read: false,
+          }
+        ]
+      });
+    }
+  }
+
+  return conversations.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
 }
 
 /** Static set of leads with timestamps derived from `now` for stability. */

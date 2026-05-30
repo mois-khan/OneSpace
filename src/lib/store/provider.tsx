@@ -17,8 +17,11 @@ import type {
   Member,
   Notification,
   PreRegistration,
-  Visitor,
   FloorPlan,
+  Ticket,
+  TicketComment,
+  Conversation,
+  Message,
 } from "@/types";
 import {
   BRANCHES,
@@ -33,6 +36,8 @@ import {
   generatePreRegistrations,
   generateRooms,
   generateVisitors,
+  generateTickets,
+  generateConversations,
 } from "./generate";
 import { generateFloorPlan } from "@/lib/data/floor-plan";
 import type { AppState } from "./selectors";
@@ -73,6 +78,11 @@ type Action =
   | { type: "ADD_LEAD_NOTE"; leadId: string; text: string }
   | { type: "UPDATE_LEAD"; leadId: string; payload: Partial<Lead> }
   | { type: "SAVE_FLOOR_PLAN"; branchId: string; floorPlan: FloorPlan }
+  | { type: "CREATE_TICKET"; payload: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "comments"> }
+  | { type: "UPDATE_TICKET_STATUS"; ticketId: string; status: Ticket["status"] }
+  | { type: "ADD_TICKET_COMMENT"; ticketId: string; comment: Omit<TicketComment, "id" | "timestamp"> }
+  | { type: "SEND_MESSAGE"; conversationId?: string; memberId: string; branchId: string; text: string; senderId: string }
+  | { type: "MARK_CONVERSATION_READ"; conversationId: string; viewerId: string }
   | { type: "PORTAL_LOGIN"; memberId: string }
   | { type: "PORTAL_LOGOUT" }
   | { type: "HYDRATE"; payload: AppState };
@@ -94,6 +104,8 @@ function buildInitialState(now: number): AppState {
   const notifications = generateNotifications(now, members, invoices, visitors, leads);
   const activity = generateActivity(now, members, visitors, leads, bookings, invoices);
   const occupancyTrend = generateOccupancyTrend(now);
+  const tickets = generateTickets(now, members);
+  const conversations = generateConversations(now, members);
   
   const floorPlans: Record<string, FloorPlan> = {};
   for (const b of BRANCHES) {
@@ -109,6 +121,8 @@ function buildInitialState(now: number): AppState {
     bookings,
     rooms,
     invoices,
+    tickets,
+    conversations,
     notifications,
     activity,
     floorPlans,
@@ -126,7 +140,7 @@ let activityCounter = 1000;
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "HYDRATE":
-      return action.payload;
+      return { ...action.payload, tickets: action.payload.tickets || [], conversations: action.payload.conversations || [] };
     case "PORTAL_LOGIN":
       return { ...state, portalLoggedInMemberId: action.memberId };
     case "PORTAL_LOGOUT":
@@ -136,6 +150,80 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         floorPlans: { ...state.floorPlans, [action.branchId]: action.floorPlan },
       };
+    case "CREATE_TICKET": {
+      const ticket: Ticket = {
+        ...action.payload,
+        id: `tk-${Date.now()}`,
+        createdAt: new Date(state.now).toISOString(),
+        updatedAt: new Date(state.now).toISOString(),
+        comments: [],
+      };
+      return { ...state, tickets: [ticket, ...state.tickets] };
+    }
+    case "UPDATE_TICKET_STATUS": {
+      return {
+        ...state,
+        tickets: state.tickets.map(t => 
+          t.id === action.ticketId ? { ...t, status: action.status, updatedAt: new Date(state.now).toISOString() } : t
+        )
+      };
+    }
+    case "ADD_TICKET_COMMENT": {
+      const comment: TicketComment = {
+        ...action.comment,
+        id: `tc-${Date.now()}`,
+        timestamp: new Date(state.now).toISOString(),
+      };
+      return {
+        ...state,
+        tickets: state.tickets.map(t =>
+          t.id === action.ticketId ? { ...t, comments: [...t.comments, comment], updatedAt: new Date(state.now).toISOString() } : t
+        )
+      };
+    }
+    case "SEND_MESSAGE": {
+      const msg: Message = {
+        id: `msg-${Date.now()}`,
+        senderId: action.senderId,
+        text: action.text,
+        timestamp: new Date(state.now).toISOString(),
+        read: false,
+      };
+      
+      let convs = [...state.conversations];
+      let conv = convs.find(c => c.id === action.conversationId) || convs.find(c => c.memberId === action.memberId);
+      
+      if (!conv) {
+        conv = {
+          id: `conv-${Date.now()}`,
+          memberId: action.memberId,
+          branchId: action.branchId,
+          messages: [msg],
+          lastMessageAt: msg.timestamp,
+        };
+        convs.unshift(conv);
+      } else {
+        convs = convs.map(c => 
+          c.id === conv!.id 
+            ? { ...c, messages: [...c.messages, msg], lastMessageAt: msg.timestamp }
+            : c
+        );
+        convs.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+      }
+      return { ...state, conversations: convs };
+    }
+    case "MARK_CONVERSATION_READ": {
+      return {
+        ...state,
+        conversations: state.conversations.map(c => {
+          if (c.id !== action.conversationId) return c;
+          return {
+            ...c,
+            messages: c.messages.map(m => m.senderId !== action.viewerId ? { ...m, read: true } : m)
+          };
+        })
+      };
+    }
     case "SET_BRANCH": {
       // Enforce branch lock at the store level — scoped roles cannot switch away
       // from their assigned branch even if a UI somehow tries.
@@ -798,6 +886,16 @@ export function useAppActions() {
         dispatch({ type: "UPDATE_LEAD", leadId, payload }),
       saveFloorPlan: (branchId: string, floorPlan: FloorPlan) =>
         dispatch({ type: "SAVE_FLOOR_PLAN", branchId, floorPlan }),
+      createTicket: (payload: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "comments">) =>
+        dispatch({ type: "CREATE_TICKET", payload }),
+      updateTicketStatus: (ticketId: string, status: Ticket["status"]) =>
+        dispatch({ type: "UPDATE_TICKET_STATUS", ticketId, status }),
+      addTicketComment: (ticketId: string, comment: Omit<TicketComment, "id" | "timestamp">) =>
+        dispatch({ type: "ADD_TICKET_COMMENT", ticketId, comment }),
+      sendMessage: (payload: { conversationId?: string; memberId: string; branchId: string; text: string; senderId: string }) =>
+        dispatch({ type: "SEND_MESSAGE", ...payload }),
+      markConversationRead: (conversationId: string, viewerId: string) =>
+        dispatch({ type: "MARK_CONVERSATION_READ", conversationId, viewerId }),
       portalLogin: (memberId: string) => dispatch({ type: "PORTAL_LOGIN", memberId }),
       portalLogout: () => dispatch({ type: "PORTAL_LOGOUT" }),
     }),

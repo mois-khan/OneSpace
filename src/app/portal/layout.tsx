@@ -4,7 +4,7 @@ import { usePortalMember, useAppActions } from "@/lib/store";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { Building2, Calendar, CreditCard, LogOut, User } from "lucide-react";
+import { Building2, Calendar, CreditCard, LogOut, User, Headset } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +27,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     { name: "Dashboard", href: "/portal", icon: Building2 },
     { name: "Bookings", href: "/portal/bookings", icon: Calendar },
     { name: "Billing", href: "/portal/billing", icon: CreditCard },
+    { name: "Support", href: "/portal/support", icon: Headset },
   ];
 
   return (
