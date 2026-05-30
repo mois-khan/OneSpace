@@ -1,14 +1,18 @@
 "use client";
 
-import { usePortalMember, useInvoices } from "@/lib/store";
+import { useState } from "react";
+import { usePortalMember, useInvoices, useAppActions } from "@/lib/store";
 import { format } from "date-fns";
 import { Download, CreditCard, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { PaymentModal } from "@/components/portal/PaymentModal";
 
 export default function PortalBilling() {
   const member = usePortalMember();
   const invoices = useInvoices();
+  const { payInvoices } = useAppActions();
+  
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   if (!member) return null;
 
@@ -61,13 +65,15 @@ export default function PortalBilling() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => toast.info("Download PDF feature coming soon")}
+                          <a
+                            href={`/portal/billing/invoice/${inv.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center justify-center p-2 text-cs-gray-400 hover:text-cs-black hover:bg-cs-gray-100 rounded-lg transition-colors"
                             title="Download PDF"
                           >
                             <Download className="w-4 h-4" />
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     ))}
@@ -101,7 +107,7 @@ export default function PortalBilling() {
               </div>
               
               <button 
-                onClick={() => toast.info("Payment gateway integration pending")}
+                onClick={() => setIsPaymentModalOpen(true)}
                 disabled={pendingInvoices.length === 0}
                 className={cn(
                   "w-full py-3 rounded-xl font-bold transition-all shadow-sm flex justify-center items-center gap-2",
@@ -116,6 +122,16 @@ export default function PortalBilling() {
           </div>
         </div>
       </div>
+
+      <PaymentModal 
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        amount={pendingInvoices.reduce((acc, inv) => acc + inv.amount, 0)}
+        onSuccess={() => {
+          payInvoices(pendingInvoices.map(i => i.id));
+          setIsPaymentModalOpen(false);
+        }}
+      />
     </div>
   );
 }

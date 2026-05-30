@@ -85,6 +85,7 @@ type Action =
   | { type: "MARK_CONVERSATION_READ"; conversationId: string; viewerId: string }
   | { type: "PORTAL_LOGIN"; memberId: string }
   | { type: "PORTAL_LOGOUT" }
+  | { type: "PAY_INVOICES"; invoiceIds: string[] }
   | { type: "HYDRATE"; payload: AppState };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -145,6 +146,21 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, portalLoggedInMemberId: action.memberId };
     case "PORTAL_LOGOUT":
       return { ...state, portalLoggedInMemberId: null };
+    case "PAY_INVOICES": {
+      const newInvoices = state.invoices.map(inv => 
+        action.invoiceIds.includes(inv.id) ? { ...inv, status: "paid" as const } : inv
+      );
+      const newMembers = state.members.map(m => {
+        if (!m.invoices) return m;
+        return {
+          ...m,
+          invoices: m.invoices.map(inv => 
+            action.invoiceIds.includes(inv.id) ? { ...inv, status: "paid" as const } : inv
+          )
+        };
+      });
+      return { ...state, invoices: newInvoices, members: newMembers };
+    }
     case "SAVE_FLOOR_PLAN":
       return {
         ...state,
@@ -887,6 +903,7 @@ export function useAppActions() {
       markAllNotificationsRead: () =>
         dispatch({ type: "MARK_ALL_NOTIFICATIONS_READ" }),
       payInvoice: (id: string) => dispatch({ type: "PAY_INVOICE", id }),
+      payInvoices: (invoiceIds: string[]) => dispatch({ type: "PAY_INVOICES", invoiceIds }),
       onboardMember: (payload: OnboardMemberPayload) =>
         dispatch({ type: "ONBOARD_MEMBER", payload }),
       pushNotification: (
