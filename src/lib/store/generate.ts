@@ -198,7 +198,7 @@ export function generateInvoices(now: number, members: Member[]): Invoice[] {
 /** Static set of leads with timestamps derived from `now` for stability. */
 export function generateLeads(now: number): Lead[] {
   const t = (daysAgo: number) => new Date(now - daysAgo * DAY).toISOString();
-  return [
+  const baseLeads: Omit<Lead, "interactions" | "notes">[] = [
     // NEW
     { id: "l-001", branchId: "b1", name: "Sahil Gupta", company: "EdTech Solutions", phone: "+91 98765 10001", planType: "Cabin", source: "Website", stage: "new", mrr: 22000, assignedTo: "Arun", createdAt: t(1) },
     { id: "l-002", branchId: "b2", name: "Ritika Jain", company: "Freelance Design", phone: "+91 98765 10002", planType: "Flexi", source: "Google", stage: "new", mrr: 7999, assignedTo: "Neha", createdAt: t(2) },
@@ -240,6 +240,7 @@ export function generateLeads(now: number): Lead[] {
     { id: "l-033", branchId: "b3", name: "Rashmi Shetty", company: "Design Labs", phone: "+91 98765 10033", planType: "Dedicated", source: "Google", stage: "lost", mrr: 24000, assignedTo: "Neha", lossReason: "Chose competitor", createdAt: t(15) },
     { id: "l-034", branchId: "b2", name: "Tarun Malik", phone: "+91 98765 10034", planType: "Flexi", source: "Walk-in", stage: "lost", mrr: 7999, assignedTo: "Rahul", lossReason: "No response", createdAt: t(40) },
   ];
+  return baseLeads.map((l) => ({ ...l, interactions: [], notes: [] }) as Lead);
 }
 
 /** Visitors anchored to today. */

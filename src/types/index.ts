@@ -60,6 +60,22 @@ export interface Seat {
   memberId?: string;
 }
 
+export interface LeadInteraction {
+  id: string;
+  type: "call" | "whatsapp" | "email" | "visit" | "stage_change" | "system" | "note";
+  timestamp: string;
+  author: string;
+  notes: string;
+  metadata?: any; 
+}
+
+export interface LeadNote {
+  id: string;
+  author: string;
+  timestamp: string;
+  text: string;
+}
+
 export interface Lead {
   id: string;
   branchId: string;
@@ -74,6 +90,9 @@ export interface Lead {
   assignedTo?: string;
   lossReason?: string;
   createdAt: string;
+  followUpDate?: string;
+  interactions: LeadInteraction[];
+  notes: LeadNote[];
 }
 
 export interface Visitor {

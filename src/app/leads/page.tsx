@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, BarChart2 } from "lucide-react";
 import { KanbanBoard } from "@/components/leads/KanbanBoard";
+import { LeadsTable } from "@/components/leads/LeadsTable";
+import { LeadsAnalytics } from "@/components/leads/LeadsAnalytics";
 import { useLeads, useBranch, useAppActions } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -12,26 +14,38 @@ export default function LeadsPage() {
   const { addLead } = useAppActions();
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [view, setView] = useState<"kanban" | "table" | "analytics">("table");
+  const [stageFilter, setStageFilter] = useState<string | null>(null);
 
   // Add lead form fields
   const [form, setForm] = useState({
     name: "",
     company: "",
     phone: "",
+    email: "",
     planType: "",
     source: "",
+    mrr: "",
   });
 
   const filteredLeads = useMemo(() => {
-    if (!searchQuery) return leads;
+    let result = leads;
+    if (stageFilter) {
+      if (stageFilter === "active") {
+        result = result.filter((l) => l.stage !== "won" && l.stage !== "lost");
+      } else {
+        result = result.filter((l) => l.stage === stageFilter);
+      }
+    }
+    if (!searchQuery) return result;
     const q = searchQuery.toLowerCase();
-    return leads.filter(
+    return result.filter(
       (l) =>
         l.name.toLowerCase().includes(q) ||
         (l.company || "").toLowerCase().includes(q) ||
         l.phone.toLowerCase().includes(q),
     );
-  }, [leads, searchQuery]);
+  }, [leads, searchQuery, stageFilter]);
 
   const newCount = filteredLeads.filter((l) => l.stage === "new").length;
   const touredCount = filteredLeads.filter((l) => l.stage === "toured").length;
@@ -48,14 +62,16 @@ export default function LeadsPage() {
     addLead({
       name: form.name,
       company: form.company || undefined,
+      email: form.email || undefined,
       phone: form.phone,
       planType: form.planType || "Flexi",
       source: form.source || "Walk-in",
+      mrr: form.mrr ? parseInt(form.mrr) : undefined,
       stage: "new",
       branchId: selectedBranchId === "all" ? "b2" : selectedBranchId,
     });
     toast.success(`Added ${form.name}`);
-    setForm({ name: "", company: "", phone: "", planType: "", source: "" });
+    setForm({ name: "", company: "", phone: "", email: "", planType: "", source: "", mrr: "" });
     setIsAddFormOpen(false);
   };
 
@@ -80,18 +96,24 @@ export default function LeadsPage() {
 
         <div className="flex items-center justify-between bg-cs-gray-50 rounded-lg border border-cs-gray-200 px-3 py-2.5">
           <div className="flex items-center gap-5 text-[13px] flex-wrap">
-            <PipelineStat label="Active" count={newCount + touredCount + proposalCount + negotiatingCount} tone="black" />
+            <PipelineStat label="Active" count={newCount + touredCount + proposalCount + negotiatingCount} tone="black" active={stageFilter === "active"} onClick={() => setStageFilter(stageFilter === "active" ? null : "active")} />
             <span className="w-px h-4 bg-cs-gray-300" />
-            <PipelineStat label="New" count={newCount} tone="blue" />
-            <PipelineStat label="Toured" count={touredCount} tone="amber" />
-            <PipelineStat label="Proposal" count={proposalCount} tone="red" />
-            <PipelineStat label="Negotiating" count={negotiatingCount} tone="green" />
+            <PipelineStat label="New" count={newCount} tone="blue" active={stageFilter === "new"} onClick={() => setStageFilter(stageFilter === "new" ? null : "new")} />
+            <PipelineStat label="Toured" count={touredCount} tone="amber" active={stageFilter === "toured"} onClick={() => setStageFilter(stageFilter === "toured" ? null : "toured")} />
+            <PipelineStat label="Proposal" count={proposalCount} tone="red" active={stageFilter === "proposal"} onClick={() => setStageFilter(stageFilter === "proposal" ? null : "proposal")} />
+            <PipelineStat label="Negotiating" count={negotiatingCount} tone="green" active={stageFilter === "negotiating"} onClick={() => setStageFilter(stageFilter === "negotiating" ? null : "negotiating")} />
             <span className="w-px h-4 bg-cs-gray-300" />
-            <PipelineStat label="Won" count={wonCount} tone="green" muted />
-            <PipelineStat label="Lost" count={lostCount} tone="gray" muted />
+            <PipelineStat label="Won" count={wonCount} tone="green" muted active={stageFilter === "won"} onClick={() => setStageFilter(stageFilter === "won" ? null : "won")} />
+            <PipelineStat label="Lost" count={lostCount} tone="gray" muted active={stageFilter === "lost"} onClick={() => setStageFilter(stageFilter === "lost" ? null : "lost")} />
           </div>
 
-          <div className="relative">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center bg-white border border-cs-gray-200 rounded-md p-1 shadow-sm">
+              <button onClick={() => setView("kanban")} className={`p-1.5 rounded ${view === "kanban" ? "bg-cs-gray-100 text-cs-black shadow-sm" : "text-cs-gray-500 hover:text-cs-black"}`} title="Kanban View"><LayoutGrid className="w-4 h-4" /></button>
+              <button onClick={() => setView("table")} className={`p-1.5 rounded ${view === "table" ? "bg-cs-gray-100 text-cs-black shadow-sm" : "text-cs-gray-500 hover:text-cs-black"}`} title="Table View"><List className="w-4 h-4" /></button>
+              <button onClick={() => setView("analytics")} className={`p-1.5 rounded ${view === "analytics" ? "bg-cs-gray-100 text-cs-black shadow-sm" : "text-cs-gray-500 hover:text-cs-black"}`} title="Analytics View"><BarChart2 className="w-4 h-4" /></button>
+            </div>
+            <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-cs-gray-500" />
             <input
               type="text"
@@ -100,6 +122,7 @@ export default function LeadsPage() {
               placeholder="Search leads..."
               className="pl-8 pr-3 py-1.5 border border-cs-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-cs-red bg-white w-48"
             />
+            </div>
           </div>
         </div>
 
@@ -126,6 +149,20 @@ export default function LeadsPage() {
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 className="flex-1 min-w-[140px] px-3 py-2 border border-cs-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-cs-red"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="flex-1 min-w-[140px] px-3 py-2 border border-cs-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-cs-red"
+              />
+              <input
+                type="number"
+                placeholder="Budget (₹)"
+                value={form.mrr}
+                onChange={(e) => setForm({ ...form, mrr: e.target.value })}
+                className="flex-1 min-w-[120px] px-3 py-2 border border-cs-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-cs-red"
               />
 
               <select
@@ -163,8 +200,10 @@ export default function LeadsPage() {
         )}
       </div>
 
-      <div className="flex-1 pt-6 overflow-hidden flex flex-col min-h-0">
-        <KanbanBoard leads={filteredLeads} />
+      <div className="flex-1 pt-6 overflow-hidden flex flex-col min-h-0 bg-cs-gray-50/30">
+        {view === "kanban" && <KanbanBoard leads={filteredLeads} />}
+        {view === "table" && <div className="p-6 h-full pb-10"><LeadsTable leads={filteredLeads} /></div>}
+        {view === "analytics" && <LeadsAnalytics leads={leads} />}
       </div>
     </div>
   );
@@ -177,11 +216,15 @@ function PipelineStat({
   count,
   tone,
   muted = false,
+  active = false,
+  onClick,
 }: {
   label: string;
   count: number;
   tone: PipelineTone;
   muted?: boolean;
+  active?: boolean;
+  onClick?: () => void;
 }) {
   const toneClass: Record<PipelineTone, string> = {
     blue: "bg-status-blue",
@@ -192,10 +235,13 @@ function PipelineStat({
     black: "bg-cs-black",
   };
   return (
-    <span className={`inline-flex items-center gap-1.5 ${muted ? "opacity-70" : ""}`}>
+    <button 
+      onClick={onClick} 
+      className={`inline-flex items-center gap-1.5 px-2 py-1 -mx-2 rounded transition-colors ${muted ? "opacity-70 hover:opacity-100" : ""} ${active ? "bg-cs-gray-200 text-cs-black shadow-sm" : "hover:bg-cs-gray-200"}`}
+    >
       <span className={`w-1.5 h-1.5 rounded-full ${toneClass[tone]}`} />
       <span className="font-medium text-cs-gray-700">{label}</span>
       <span className="font-semibold text-cs-black tabular-nums">{count}</span>
-    </span>
+    </button>
   );
 }

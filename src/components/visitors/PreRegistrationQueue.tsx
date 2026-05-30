@@ -12,7 +12,7 @@ export function PreRegistrationQueue() {
   const preRegs = usePreRegistrations();
   const now = useNow();
   const { cancelPreRegistration, convertPreRegistration } = useAppActions();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const pending = preRegs
     .filter((p) => p.status === "pending")

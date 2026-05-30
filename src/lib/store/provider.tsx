@@ -12,6 +12,8 @@ import type {
   CurrentUser,
   Invoice,
   Lead,
+  LeadInteraction,
+  LeadNote,
   Member,
   Notification,
   PreRegistration,
@@ -56,7 +58,7 @@ type Action =
   | { type: "CONVERT_PRE_REGISTRATION"; id: string }
   | { type: "RENEW_MEMBER"; memberId: string; months?: number }
   | { type: "MOVE_LEAD"; leadId: string; stage: Lead["stage"] }
-  | { type: "ADD_LEAD"; payload: Omit<Lead, "id" | "createdAt"> }
+  | { type: "ADD_LEAD"; payload: Omit<Lead, "id" | "createdAt" | "interactions" | "notes"> }
   | { type: "CREATE_BOOKING"; payload: Omit<Booking, "id"> }
   | { type: "CANCEL_BOOKING"; id: string }
   | { type: "MARK_NOTIFICATION_READ"; id: string }
@@ -64,7 +66,11 @@ type Action =
   | { type: "PAY_INVOICE"; id: string }
   | { type: "ONBOARD_MEMBER"; payload: OnboardMemberPayload }
   | { type: "PUSH_NOTIFICATION"; payload: Omit<Notification, "id" | "read" | "timestamp"> & { timestamp?: number } }
-  | { type: "PUSH_ACTIVITY"; payload: Omit<ActivityEvent, "id" | "timestamp"> & { timestamp?: number } };
+  | { type: "PUSH_ACTIVITY"; payload: Omit<ActivityEvent, "id" | "timestamp"> & { timestamp?: number } }
+  | { type: "LOG_LEAD_INTERACTION"; leadId: string; interaction: Omit<LeadInteraction, "id" | "timestamp" | "author"> }
+  | { type: "ADD_LEAD_NOTE"; leadId: string; text: string }
+  | { type: "UPDATE_LEAD"; leadId: string; payload: Partial<Lead> }
+  | { type: "HYDRATE"; payload: AppState };
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -107,6 +113,8 @@ let activityCounter = 1000;
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case "HYDRATE":
+      return action.payload;
     case "SET_BRANCH": {
       // Enforce branch lock at the store level — scoped roles cannot switch away
       // from their assigned branch even if a UI somehow tries.
@@ -319,6 +327,8 @@ function reducer(state: AppState, action: Action): AppState {
         ...action.payload,
         id: `l-${Date.now()}`,
         createdAt: new Date(state.now).toISOString(),
+        interactions: [],
+        notes: [],
       };
       const activity: ActivityEvent = {
         id: `a-${activityCounter++}`,
@@ -431,6 +441,62 @@ function reducer(state: AppState, action: Action): AppState {
           ...state.activity,
         ].slice(0, 80),
       };
+
+    case "LOG_LEAD_INTERACTION": {
+      const { leadId, interaction } = action;
+      const lead = state.leads.find((l) => l.id === leadId);
+      if (!lead) return state;
+
+      const newInteraction: LeadInteraction = {
+        id: `int-${Date.now()}`,
+        timestamp: new Date(state.now).toISOString(),
+        author: state.currentUser.name,
+        ...interaction,
+      };
+
+      const leads = state.leads.map((l) =>
+        l.id === leadId
+          ? { ...l, interactions: [newInteraction, ...(l.interactions || [])] }
+          : l
+      );
+
+      const activity: ActivityEvent = {
+        id: `a-${activityCounter++}`,
+        timestamp: state.now,
+        type: "lead_moved",
+        message: `${state.currentUser.name} logged a ${interaction.type} for ${lead.name}`,
+        link: `/leads/${lead.id}`,
+        branchId: lead.branchId,
+      };
+
+      return {
+        ...state,
+        leads,
+        activity: [activity, ...state.activity].slice(0, 80),
+      };
+    }
+
+    case "ADD_LEAD_NOTE": {
+      const lead = state.leads.find((l) => l.id === action.leadId);
+      if (!lead) return state;
+      const newNote: LeadNote = {
+        id: `note-${Date.now()}`,
+        author: state.currentUser.name,
+        timestamp: new Date(state.now).toISOString(),
+        text: action.text,
+      };
+      const leads = state.leads.map((l) =>
+        l.id === action.leadId ? { ...l, notes: [newNote, ...(l.notes || [])] } : l
+      );
+      return { ...state, leads };
+    }
+
+    case "UPDATE_LEAD": {
+      const leads = state.leads.map((l) =>
+        l.id === action.leadId ? { ...l, ...action.payload } : l
+      );
+      return { ...state, leads };
+    }
 
     case "ONBOARD_MEMBER": {
       const p = action.payload;
@@ -549,12 +615,28 @@ const StateCtx = createContext<AppState | null>(null);
 const DispatchCtx = createContext<React.Dispatch<Action> | null>(null);
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
-  // Anchor "now" once per session via useReducer's lazy initializer.
-  const [state, dispatch] = useReducer(
-    reducer,
-    undefined as unknown as number,
-    () => buildInitialState(Date.now()),
-  );
+  const now = useMemo(() => Date.now(), []);
+  const initial = useMemo(() => buildInitialState(now), [now]);
+  const [state, dispatch] = useReducer(reducer, initial);
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("onespace_state");
+    if (saved) {
+      try {
+        dispatch({ type: "HYDRATE", payload: JSON.parse(saved) });
+      } catch (e) {
+        console.error("Failed to restore state", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("onespace_state", JSON.stringify(state));
+    }
+  }, [state, isLoaded]);
 
   return (
     <StateCtx.Provider value={state}>
@@ -598,7 +680,7 @@ export function useAppActions() {
         dispatch({ type: "RENEW_MEMBER", memberId, months }),
       moveLead: (leadId: string, stage: Lead["stage"]) =>
         dispatch({ type: "MOVE_LEAD", leadId, stage }),
-      addLead: (payload: Omit<Lead, "id" | "createdAt">) =>
+      addLead: (payload: Omit<Lead, "id" | "createdAt" | "interactions" | "notes">) =>
         dispatch({ type: "ADD_LEAD", payload }),
       createBooking: (payload: Omit<Booking, "id">) =>
         dispatch({ type: "CREATE_BOOKING", payload }),
@@ -613,6 +695,12 @@ export function useAppActions() {
       pushNotification: (
         payload: Omit<Notification, "id" | "read" | "timestamp"> & { timestamp?: number },
       ) => dispatch({ type: "PUSH_NOTIFICATION", payload }),
+      logLeadInteraction: (leadId: string, interaction: Omit<LeadInteraction, "id" | "timestamp" | "author">) =>
+        dispatch({ type: "LOG_LEAD_INTERACTION", leadId, interaction }),
+      addLeadNote: (leadId: string, text: string) =>
+        dispatch({ type: "ADD_LEAD_NOTE", leadId, text }),
+      updateLead: (leadId: string, payload: Partial<Lead>) =>
+        dispatch({ type: "UPDATE_LEAD", leadId, payload }),
     }),
     [dispatch],
   );
