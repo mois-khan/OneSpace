@@ -63,12 +63,6 @@ export function SeatDetailsPanel({ seat, branchId, onClose, onAssignSeat }: Seat
   const [formPhone, setFormPhone] = useState("");
   const [formPlan, setFormPlan] = useState<"flexi" | "dedicated" | "cabin">("dedicated");
 
-  if (!seat) return null;
-
-  const cfg = statusConfig[seat.status];
-  const memberInfo = seat.memberId ? allMembers.find((m) => m.id === seat.memberId) : null;
-  const isAtRisk = memberInfo?.status === "expiring";
-
   // Filter leads that are in the pipeline (not won/lost)
   const pipelineLeads = useMemo(() => {
     const stages = ["new", "toured", "proposal", "negotiating"];
@@ -76,6 +70,12 @@ export function SeatDetailsPanel({ seat, branchId, onClose, onAssignSeat }: Seat
       (l) => stages.includes(l.stage) && l.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [allLeads, searchQuery]);
+
+  if (!seat) return null;
+
+  const cfg = statusConfig[seat.status];
+  const memberInfo = seat.memberId ? allMembers.find((m) => m.id === seat.memberId) : null;
+  const isAtRisk = memberInfo?.status === "expiring";
 
   const handleAssignLead = () => {
     if (!selectedLead || !onAssignSeat) return;

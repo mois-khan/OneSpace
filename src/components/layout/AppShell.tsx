@@ -12,8 +12,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Close mobile menu on route change
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+    if (isMobileMenuOpen) {
+      const timer = setTimeout(() => {
+        setIsMobileMenuOpen(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, isMobileMenuOpen]);
 
   // Standalone routes — no sidebar / topbar / assistant
   if (pathname === "/login" || pathname.startsWith("/checkin")) {

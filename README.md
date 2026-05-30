@@ -122,7 +122,7 @@ Other components on the page:
 
 ### 3. RBAC-aware AI Assistant (`Cmd/Ctrl + J`)
 
-A Gemini 2.5 Flash-powered chat panel with **proper role-based access control**:
+A Gemini 3.1 Flash Lite-powered chat panel with **proper role-based access control**:
 
 - **9 read tools + 3 suggestion tools** exposed to the model via function calling
 - **System prompt** baked with role description, branch scope, today's KPIs, and branch summary
@@ -236,16 +236,16 @@ A first-class TopBar widget that lets you switch between **14 role × branch per
 - **[react-zoom-pan-pinch](https://github.com/prc5/react-zoom-pan-pinch) 4.0** for floor-map pan & zoom
 
 ### Interactions
-- **[@dnd-kit](https://dndkit.com/) 6.3** for drag-and-drop on the leads kanban and floor-map seat editing
+- **HTML5 native drag-and-drop** for the leads kanban board
+- **Custom React mouse event coordinates** for interactive floor-map seat offset dragging
 - **[qrcode.react](https://github.com/zpao/qrcode.react) 4.2** for visitor invite QRs, kiosk QRs, and badges
 - **[Sonner](https://sonner.emilkowal.ski/) 2.0** for toast notifications
 
 ### AI & API
-- **[Google Generative AI SDK](https://github.com/google/generative-ai-js) 0.24** — Gemini 2.5 Flash
+- **[Google Generative AI SDK](https://github.com/google/generative-ai-js) 0.24** — Gemini 3.1 Flash Lite (with Gemini 3.5 Flash fallback)
 - Two server routes:
   - **[`/api/ai/chat`](src/app/api/ai/chat/route.ts)** — multi-turn function calling for the assistant
   - **[`/api/ai/retention-email`](src/app/api/ai/retention-email/route.ts)** — single-call email generator
-- **`@anthropic-ai/sdk` 0.98** is installed but currently unused (Gemini is the active provider)
 
 ### Architecture & state management
 - **React Context + useReducer** with discriminated-union actions
@@ -367,5 +367,5 @@ This project was built for the **GradSkills Summership 2026 PropTech Hackathon**
 
 - **Hackathon:** GradSkills Summership 2026 — PropTech Track
 - **Problem statement:** Coworking Space CRM + ERP Platform (Multi-Center Management)
-- **AI:** Powered by Google Gemini 2.5 Flash
+- **AI:** Powered by Google Gemini 3.1 Flash Lite & 3.5 Flash
 - **UI inspirations:** Linear, Stripe Dashboard, Attio, Vercel, Notion Calendar

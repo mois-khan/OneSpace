@@ -5,13 +5,14 @@ export async function POST(request: Request) {
   try {
     const { memberName, company, monthsAsMember, daysSinceLastVisit, planType } = await request.json();
 
-    const apiKey = process.env.GEMNINI_API_KEY;
+    const apiKey = process.env.GEMNINI_API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: "API key is not configured" }, { status: 500 });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const primaryModel = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    const fallbackModel = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
     const prompt = `
       You are an AI assistant for CS Coworking, a premium coworking space in India.
@@ -34,9 +35,17 @@ export async function POST(request: Request) {
       7. Sign off from "Abhijeet, Community Manager at CS Coworking".
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    let text = "";
+    try {
+      const result = await primaryModel.generateContent(prompt);
+      const response = await result.response;
+      text = response.text();
+    } catch (primaryError) {
+      console.warn("Primary model failed, falling back to gemini-3.5-flash", primaryError);
+      const result = await fallbackModel.generateContent(prompt);
+      const response = await result.response;
+      text = response.text();
+    }
 
     return NextResponse.json({ 
       subject: `We value you, ${memberName.split(' ')[0]} — let's talk about your space at CS Coworking`,

@@ -17,7 +17,7 @@ export function AIEmailModal({ isOpen, onClose, member }: AIEmailModalProps) {
   const [body, setBody] = useState("");
   const [isGenerated, setIsGenerated] = useState(false);
 
-  const handleGenerate = async () => {
+  const handleGenerate = React.useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await fetch("/api/ai/retention-email", {
@@ -47,14 +47,17 @@ export function AIEmailModal({ isOpen, onClose, member }: AIEmailModalProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [member]);
 
   // Generate on mount if opening for the first time
   React.useEffect(() => {
     if (isOpen && !isGenerated && !isLoading) {
-      handleGenerate();
+      const timer = setTimeout(() => {
+        handleGenerate();
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, isGenerated, isLoading, handleGenerate]);
 
   if (!isOpen) return null;
 
