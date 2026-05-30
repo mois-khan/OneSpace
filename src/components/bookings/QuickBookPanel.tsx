@@ -238,17 +238,32 @@ export function QuickBookPanel({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold text-cs-gray-500 uppercase tracking-wider">Purpose</label>
-            <input
-              type="text"
-              placeholder="e.g. Client presentation"
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-              className="w-full px-3 py-2 border border-cs-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-cs-red/20 focus:border-cs-red"
-            />
-          </div>
-        </form>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-cs-gray-500 uppercase tracking-wider">Purpose</label>
+              <input
+                type="text"
+                placeholder="e.g. Client presentation"
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                className="w-full px-3 py-2 border border-cs-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-cs-red/20 focus:border-cs-red"
+              />
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={!!conflict || invalidTimeRange}
+                className={cn(
+                  "w-full py-2.5 rounded-lg text-[13px] font-semibold transition-colors shadow-sm",
+                  conflict || invalidTimeRange
+                    ? "bg-cs-gray-200 text-cs-gray-500 cursor-not-allowed"
+                    : "bg-cs-red text-white hover:bg-cs-red-dark hover:shadow-md",
+                )}
+              >
+                Confirm booking
+              </button>
+            </div>
+          </form>
 
         {conflict && (
           <div className="mt-4 p-3 bg-[#DC26260F] border border-[#DC26261A] rounded-lg animate-in slide-in-from-top-2 flex gap-2.5">
@@ -272,22 +287,6 @@ export function QuickBookPanel({
             <p className="text-[11px] text-cs-gray-700">End time must be after start time.</p>
           </div>
         )}
-      </div>
-
-      <div className="p-4 border-t border-cs-gray-100 bg-cs-gray-50">
-        <button
-          form="book-form"
-          type="submit"
-          disabled={!!conflict || invalidTimeRange}
-          className={cn(
-            "w-full py-2.5 rounded-lg text-[13px] font-semibold transition-colors shadow-sm",
-            conflict || invalidTimeRange
-              ? "bg-cs-gray-200 text-cs-gray-500 cursor-not-allowed"
-              : "bg-cs-red text-white hover:bg-cs-red-dark",
-          )}
-        >
-          Confirm booking
-        </button>
       </div>
     </div>
   );

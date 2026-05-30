@@ -33,6 +33,7 @@ export interface AppState {
   /** ms anchor for "now" so SSR/CSR stay consistent within a session */
   now: number;
   currentUser: CurrentUser;
+  portalLoggedInMemberId: string | null;
 }
 
 /* ───────── basic filters ───────── */

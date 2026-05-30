@@ -15,11 +15,11 @@ const HOUR_HEIGHT = 80; // 80px per hour
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 
 const COLORS = [
-  "bg-purple-100 border-purple-300 text-purple-800",
-  "bg-blue-100 border-blue-300 text-blue-800",
-  "bg-teal-100 border-teal-300 text-teal-800",
-  "bg-amber-100 border-amber-300 text-amber-800",
-  "bg-rose-100 border-rose-300 text-rose-800"
+  "bg-[#F3E8FF] border-[#D8B4FE] text-[#6B21A8] shadow-[#F3E8FF]",
+  "bg-[#E0F2FE] border-[#7DD3FC] text-[#0369A1] shadow-[#E0F2FE]",
+  "bg-[#CCFBF1] border-[#5EEAD4] text-[#0F766E] shadow-[#CCFBF1]",
+  "bg-[#FFEDD5] border-[#FDBA74] text-[#C2410C] shadow-[#FFEDD5]",
+  "bg-[#FFE4E6] border-[#FDA4AF] text-[#BE123C] shadow-[#FFE4E6]"
 ];
 
 export function DayCalendar({ bookings, selectedDate, selectedBookingId, onSlotClick, onBookingClick }: DayCalendarProps) {
@@ -86,27 +86,27 @@ export function DayCalendar({ bookings, selectedDate, selectedBookingId, onSlotC
   };
 
   return (
-    <div className="flex bg-white rounded-xl border border-cs-gray-200 relative shadow-sm" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
+    <div className="flex bg-white rounded-2xl border border-cs-gray-200 relative shadow-sm overflow-hidden" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
       {/* Time Column */}
-      <div className="w-20 flex-shrink-0 border-r border-cs-gray-100 bg-cs-gray-50 flex flex-col relative z-10" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
+      <div className="w-24 flex-shrink-0 border-r border-cs-gray-200 bg-cs-gray-50 flex flex-col relative z-10" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
         {hours.map((hour) => (
-          <div key={hour} className="text-right pr-4 text-xs font-medium text-cs-gray-500 relative" style={{ height: `${HOUR_HEIGHT}px` }}>
-            <span className="absolute -top-2 right-4 bg-cs-gray-50 px-1">{hour}</span>
+          <div key={hour} className="text-right pr-4 text-xs font-bold text-cs-black relative" style={{ height: `${HOUR_HEIGHT}px` }}>
+            <span className="absolute -top-2.5 right-4 bg-cs-gray-50 px-1 py-0.5 rounded text-[11px]">{hour}</span>
           </div>
         ))}
       </div>
 
       {/* Grid Column */}
       <div 
-        className="flex-1 relative cursor-crosshair overflow-hidden group"
+        className="flex-1 relative cursor-crosshair overflow-hidden group bg-[#FAFAFA]"
         style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}
         onClick={handleEmptyGridClick}
       >
         {/* Horizontal Lines */}
         {hours.map((_, i) => (
           <React.Fragment key={i}>
-            <div className="absolute w-full border-t border-cs-gray-100" style={{ top: `${i * HOUR_HEIGHT}px` }} />
-            <div className="absolute w-full border-t border-cs-gray-50 border-dashed" style={{ top: `${i * HOUR_HEIGHT + HOUR_HEIGHT/2}px` }} />
+            <div className="absolute w-full border-t border-cs-gray-200 shadow-[0_1px_0_white]" style={{ top: `${i * HOUR_HEIGHT}px` }} />
+            <div className="absolute w-full border-t border-cs-gray-200 border-dashed opacity-60" style={{ top: `${i * HOUR_HEIGHT + HOUR_HEIGHT/2}px` }} />
           </React.Fragment>
         ))}
 
@@ -122,18 +122,18 @@ export function DayCalendar({ bookings, selectedDate, selectedBookingId, onSlotC
             <div
               key={booking.id}
               onClick={(e) => {
-                e.stopPropagation(); // prevent triggering empty grid click
+                e.stopPropagation();
                 onBookingClick(booking);
               }}
-              className={`absolute left-2 right-2 rounded-md border ${colorClass} p-2 overflow-hidden cursor-pointer z-20 transition-all ${
+              className={`absolute left-3 right-3 rounded-lg border ${colorClass} p-3 overflow-hidden cursor-pointer z-20 transition-all shadow-sm ${
                 isSelected
-                  ? "ring-2 ring-cs-red ring-offset-1 shadow-md"
-                  : "shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                  ? "ring-2 ring-cs-red ring-offset-2 scale-[1.01] z-30"
+                  : "hover:shadow-md hover:scale-[1.01]"
               }`}
               style={{ top, height }}
               title={`${booking.purpose} — ${booking.guestName}`}
             >
-              <div className="font-semibold text-xs leading-tight truncate">{booking.purpose || "Booked"}</div>
+              <div className="font-bold text-[13px] leading-tight truncate tracking-tight">{booking.purpose || "Booked"}</div>
               <div className="text-[10px] mt-0.5 opacity-80 font-medium truncate">{booking.guestName}</div>
               <div className="text-[10px] absolute bottom-1.5 left-2 opacity-70 tabular-nums" suppressHydrationWarning>
                 {new Date(booking.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}–

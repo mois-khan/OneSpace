@@ -73,6 +73,8 @@ type Action =
   | { type: "ADD_LEAD_NOTE"; leadId: string; text: string }
   | { type: "UPDATE_LEAD"; leadId: string; payload: Partial<Lead> }
   | { type: "SAVE_FLOOR_PLAN"; branchId: string; floorPlan: FloorPlan }
+  | { type: "PORTAL_LOGIN"; memberId: string }
+  | { type: "PORTAL_LOGOUT" }
   | { type: "HYDRATE"; payload: AppState };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -114,6 +116,7 @@ function buildInitialState(now: number): AppState {
     selectedBranchId: "all",
     now,
     currentUser: CURRENT_USER,
+    portalLoggedInMemberId: null,
   };
 }
 
@@ -124,6 +127,10 @@ function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "HYDRATE":
       return action.payload;
+    case "PORTAL_LOGIN":
+      return { ...state, portalLoggedInMemberId: action.memberId };
+    case "PORTAL_LOGOUT":
+      return { ...state, portalLoggedInMemberId: null };
     case "SAVE_FLOOR_PLAN":
       return {
         ...state,
@@ -791,6 +798,8 @@ export function useAppActions() {
         dispatch({ type: "UPDATE_LEAD", leadId, payload }),
       saveFloorPlan: (branchId: string, floorPlan: FloorPlan) =>
         dispatch({ type: "SAVE_FLOOR_PLAN", branchId, floorPlan }),
+      portalLogin: (memberId: string) => dispatch({ type: "PORTAL_LOGIN", memberId }),
+      portalLogout: () => dispatch({ type: "PORTAL_LOGOUT" }),
     }),
     [dispatch],
   );

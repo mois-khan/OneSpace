@@ -118,52 +118,52 @@ export function BookingDetailPanel({
             }
           />
         </div>
+
+        {status === "confirmed" && (
+          <div className="pt-6 space-y-2">
+            {confirming ? (
+              <div className="space-y-2 p-3 bg-white border border-cs-gray-200 rounded-lg shadow-sm">
+                <div className="flex items-start gap-2 text-[12px] text-cs-gray-700">
+                  <Trash2 className="w-3.5 h-3.5 text-status-red shrink-0 mt-0.5" />
+                  <span>Cancel this booking? The room becomes free for others.</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirming(false)}
+                    className="flex-1 py-2 rounded-lg text-[12px] font-medium bg-white border border-cs-gray-200 text-cs-gray-700 hover:bg-cs-gray-50"
+                  >
+                    Keep
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="flex-1 py-2 rounded-lg text-[12px] font-semibold bg-status-red text-white hover:bg-[#B91C1C] transition-colors"
+                  >
+                    Yes, cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-[13px] font-medium bg-white border border-cs-gray-200 text-cs-gray-700 hover:bg-[#DC26260F] hover:text-status-red hover:border-status-red/30 transition-colors shadow-sm"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Cancel booking
+              </button>
+            )}
+          </div>
+        )}
+
+        {status === "completed" && (
+          <div className="mt-4 p-3 border border-cs-gray-100 bg-cs-gray-50 rounded-lg flex items-center gap-2 text-[12px] text-cs-gray-500 shadow-sm">
+            <CheckCircle2 className="w-3.5 h-3.5 text-status-green" />
+            Booking has already ended.
+          </div>
+        )}
       </div>
-
-      {status === "confirmed" && (
-        <div className="p-4 border-t border-cs-gray-100 bg-cs-gray-50 space-y-2">
-          {confirming ? (
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 text-[12px] text-cs-gray-700">
-                <Trash2 className="w-3.5 h-3.5 text-status-red shrink-0 mt-0.5" />
-                <span>Cancel this booking? The room becomes free for others.</span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirming(false)}
-                  className="flex-1 py-2 rounded-lg text-[12px] font-medium bg-white border border-cs-gray-200 text-cs-gray-700 hover:bg-cs-gray-50"
-                >
-                  Keep
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="flex-1 py-2 rounded-lg text-[12px] font-semibold bg-status-red text-white hover:bg-[#B91C1C] transition-colors"
-                >
-                  Yes, cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-[13px] font-medium bg-white border border-cs-gray-200 text-cs-gray-700 hover:bg-[#DC26260F] hover:text-status-red hover:border-status-red/30 transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Cancel booking
-            </button>
-          )}
-        </div>
-      )}
-
-      {status === "completed" && (
-        <div className="p-4 border-t border-cs-gray-100 bg-cs-gray-50 flex items-center gap-2 text-[12px] text-cs-gray-500">
-          <CheckCircle2 className="w-3.5 h-3.5 text-status-green" />
-          Booking has already ended.
-        </div>
-      )}
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, isMobileMenuOpen]);
 
   // Standalone routes — no sidebar / topbar / assistant
-  if (pathname === "/login" || pathname.startsWith("/checkin")) {
+  if (pathname === "/login" || pathname.startsWith("/checkin") || pathname.startsWith("/portal")) {
     return <>{children}</>;
   }
 

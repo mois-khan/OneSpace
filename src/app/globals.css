@@ -56,6 +56,7 @@
   --color-cs-gray-50: var(--cs-gray-50);
   --color-cs-gray-100: var(--cs-gray-100);
   --color-cs-gray-300: var(--cs-gray-300);
+  --color-cs-gray-400: var(--cs-gray-400);
   --color-cs-gray-500: var(--cs-gray-500);
   --color-cs-gray-700: var(--cs-gray-700);
 
@@ -82,7 +83,8 @@
   --cs-gray-50: #F8F9FA;
   --cs-gray-100: #F1F3F5;
   --cs-gray-300: #D1D5DB;
-  --cs-gray-500: #6B7280;
+  --cs-gray-400: #6B7280;
+  --cs-gray-500: #4B5563;
   --cs-gray-700: #374151;
   --cs-hero-from: #0D1B2A;
   --cs-hero-to: #8B0000;
@@ -134,8 +136,16 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    caret-color: var(--cs-black) !important;
   }
   body {
     @apply bg-background text-foreground;
+  }
+  button, 
+  a, 
+  [role="button"], 
+  [type="button"], 
+  [type="submit"] {
+    @apply cursor-pointer;
   }
 }

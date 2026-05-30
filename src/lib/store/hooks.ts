@@ -143,3 +143,9 @@ export function useCurrentUser() {
 export function useNow() {
   return useAppState().now;
 }
+
+export function usePortalMember() {
+  const state = useAppState();
+  if (!state.portalLoggedInMemberId) return null;
+  return state.members.find((m) => m.id === state.portalLoggedInMemberId) || null;
+}

@@ -17,7 +17,7 @@ export default function VisitorsPage() {
   const { selectedBranchId, selectedBranch } = useBranch();
   const { checkInVisitor } = useAppActions();
   const [activeVisitor, setActiveVisitor] = useState<Visitor | null>(null);
-  const [view, setView] = useState<"log" | "register">("log");
+  const [view, setView] = useState<"log" | "register">("register");
 
   const handleCheckIn = (data: { name: string; phone: string; purpose: string; hostName: string }) => {
     checkInVisitor({

@@ -11,7 +11,6 @@ import {
 } from "@/lib/store";
 import type { Member } from "@/types";
 import { RenewalHero } from "@/components/renewals/RenewalHero";
-import { RenewalTimeline } from "@/components/renewals/RenewalTimeline";
 import { RiskTable } from "@/components/renewals/RiskTable";
 import { RenewalModal } from "@/components/renewals/RenewalModal";
 import { BulkEmailModal } from "@/components/renewals/BulkEmailModal";
@@ -168,8 +167,6 @@ export default function RenewalsPage() {
       </div>
 
       <RenewalHero members={members} />
-
-      <RenewalTimeline members={members} />
 
       <div>
         <div className="flex items-center gap-1.5 mb-4 flex-wrap">

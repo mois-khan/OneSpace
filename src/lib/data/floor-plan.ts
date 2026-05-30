@@ -128,50 +128,51 @@ function generateHitechCity(): FloorPlan {
   const seatIdx = { v: 0 };
   const memberIdx = { v: 0 };
   
+  // Premium muted colors for a high-end feel
   // Floor 0: Ground
   const f0Zones: Zone[] = [
-    { id: "h-rec", branchId: "b1", name: "Reception", type: "reception", x: 20, y: 20, width: 180, height: 90, color: "#F8F6F4", borderColor: "#D6D0C9", label: "Reception" },
-    { id: "h-pantry", branchId: "b1", name: "Pantry", type: "pantry", x: 220, y: 20, width: 140, height: 90, color: "#FFF8E7", borderColor: "#E8D5A8", label: "Pantry & Café" },
-    { id: "h-lounge", branchId: "b1", name: "Lounge", type: "lounge", x: 380, y: 20, width: 180, height: 90, color: "#EEF2FF", borderColor: "#C7D2FE", label: "Collaboration Lounge" },
-    { id: "h-hot", branchId: "b1", name: "Hot Desks", type: "hot_desk", x: 20, y: 130, width: 340, height: 220, color: "#F0FDF4", borderColor: "#BBF7D0", label: "Hot Desks (Flexi)" },
-    { id: "h-pb1", branchId: "b1", name: "PB-1", type: "phone_booth", x: 580, y: 20, width: 60, height: 90, color: "#ECFDF5", borderColor: "#A7F3D0", label: "PB-1" },
-    { id: "h-pb2", branchId: "b1", name: "PB-2", type: "phone_booth", x: 660, y: 20, width: 60, height: 90, color: "#ECFDF5", borderColor: "#A7F3D0", label: "PB-2" },
+    { id: "h-rec", branchId: "b1", name: "Reception", type: "reception", x: 40, y: 40, width: 220, height: 120, color: "#F9FAFB", borderColor: "#E5E7EB", label: "Reception Area" },
+    { id: "h-pantry", branchId: "b1", name: "Pantry", type: "pantry", x: 280, y: 40, width: 180, height: 120, color: "#FFFBEB", borderColor: "#FDE68A", label: "Pantry & Café" },
+    { id: "h-lounge", branchId: "b1", name: "Lounge", type: "lounge", x: 480, y: 40, width: 240, height: 120, color: "#EFF6FF", borderColor: "#BFDBFE", label: "Collaboration Lounge" },
+    { id: "h-hot", branchId: "b1", name: "Hot Desks", type: "hot_desk", x: 40, y: 180, width: 420, height: 260, color: "#F0FDF4", borderColor: "#BBF7D0", label: "Hot Desks (Flexi)" },
+    { id: "h-pb1", branchId: "b1", name: "PB-1", type: "phone_booth", x: 480, y: 180, width: 80, height: 100, color: "#FDF4FF", borderColor: "#FBCFE8", label: "Phone Booth 1" },
+    { id: "h-pb2", branchId: "b1", name: "PB-2", type: "phone_booth", x: 580, y: 180, width: 80, height: 100, color: "#FDF4FF", borderColor: "#FBCFE8", label: "Phone Booth 2" },
   ];
   const f0Seats: Seat[] = [];
-  addSeatGrid(f0Seats, rand, seatIdx, memberIdx, "h-hot", "HD", 20, 130, 6, 4, 36, 28, 14, 16, 0.60);
-  addRoomSeat(f0Seats, seatIdx, memberIdx, "h-pb1", "PB-01", 590, 45, 40, 40, "occupied");
-  addRoomSeat(f0Seats, seatIdx, memberIdx, "h-pb2", "PB-02", 670, 45, 40, 40, "available");
+  addSeatGrid(f0Seats, rand, seatIdx, memberIdx, "h-hot", "HD", 40, 180, 7, 4, 38, 30, 16, 20, 0.60);
+  addRoomSeat(f0Seats, seatIdx, memberIdx, "h-pb1", "PB-01", 495, 205, 50, 50, "occupied");
+  addRoomSeat(f0Seats, seatIdx, memberIdx, "h-pb2", "PB-02", 595, 205, 50, 50, "available");
 
   // Floor 1
   const f1Zones: Zone[] = [
-    { id: "h-ded", branchId: "b1", name: "Dedicated", type: "dedicated", x: 20, y: 20, width: 320, height: 220, color: "#FFF7ED", borderColor: "#FED7AA", label: "Dedicated Desks" },
-    { id: "h-cab1", branchId: "b1", name: "Cabin A", type: "cabin", x: 360, y: 20, width: 160, height: 110, color: "#FAF5FF", borderColor: "#E9D5FF", label: "Cabin A (6p)", capacity: 6 },
-    { id: "h-cab2", branchId: "b1", name: "Cabin B", type: "cabin", x: 540, y: 20, width: 160, height: 110, color: "#FAF5FF", borderColor: "#E9D5FF", label: "Cabin B (8p)", capacity: 8 },
-    { id: "h-mgr", branchId: "b1", name: "Manager", type: "manager", x: 360, y: 150, width: 100, height: 90, color: "#FEF2F2", borderColor: "#FECACA", label: "Manager" },
+    { id: "h-ded", branchId: "b1", name: "Dedicated", type: "dedicated", x: 40, y: 40, width: 380, height: 260, color: "#FFF7ED", borderColor: "#FED7AA", label: "Dedicated Desks" },
+    { id: "h-cab1", branchId: "b1", name: "Cabin A", type: "cabin", x: 440, y: 40, width: 180, height: 120, color: "#F5F3FF", borderColor: "#DDD6FE", label: "Cabin A (6p)", capacity: 6 },
+    { id: "h-cab2", branchId: "b1", name: "Cabin B", type: "cabin", x: 640, y: 40, width: 180, height: 120, color: "#F5F3FF", borderColor: "#DDD6FE", label: "Cabin B (8p)", capacity: 8 },
+    { id: "h-mgr", branchId: "b1", name: "Manager", type: "manager", x: 440, y: 180, width: 140, height: 120, color: "#FEF2F2", borderColor: "#FECACA", label: "Manager Office" },
   ];
   const f1Seats: Seat[] = [];
-  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "h-ded", "DD", 20, 20, 6, 4, 34, 28, 14, 16, 0.82);
-  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "h-cab1", "CA", 360, 20, 3, 2, 34, 28, 10, 14, 0.90);
-  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "h-cab2", "CB", 540, 20, 4, 2, 26, 28, 10, 14, 0.85);
-  addRoomSeat(f1Seats, seatIdx, memberIdx, "h-mgr", "MGR", 375, 175, 70, 50, "occupied");
+  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "h-ded", "DD", 40, 40, 6, 4, 38, 30, 16, 20, 0.82);
+  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "h-cab1", "CA", 440, 40, 3, 2, 38, 30, 12, 16, 0.90);
+  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "h-cab2", "CB", 640, 40, 4, 2, 30, 30, 10, 16, 0.85);
+  addRoomSeat(f1Seats, seatIdx, memberIdx, "h-mgr", "MGR", 465, 210, 90, 60, "occupied");
 
   // Floor 2
   const f2Zones: Zone[] = [
-    { id: "h-cab3", branchId: "b1", name: "Cabin C", type: "cabin", x: 20, y: 20, width: 140, height: 110, color: "#FAF5FF", borderColor: "#E9D5FF", label: "Cabin C (4p)", capacity: 4 },
-    { id: "h-cab4", branchId: "b1", name: "Cabin D", type: "cabin", x: 180, y: 20, width: 180, height: 110, color: "#FAF5FF", borderColor: "#E9D5FF", label: "Cabin D (10p)", capacity: 10 },
-    { id: "h-conf1", branchId: "b1", name: "Conf Alpha", type: "conference", x: 380, y: 20, width: 160, height: 110, color: "#FFF1F2", borderColor: "#FECDD3", label: "Conference Alpha (12p)", capacity: 12 },
-    { id: "h-conf2", branchId: "b1", name: "Conf Beta", type: "conference", x: 560, y: 20, width: 140, height: 110, color: "#FFF1F2", borderColor: "#FECDD3", label: "Conference Beta (6p)", capacity: 6 },
+    { id: "h-cab3", branchId: "b1", name: "Cabin C", type: "cabin", x: 40, y: 40, width: 160, height: 120, color: "#F5F3FF", borderColor: "#DDD6FE", label: "Cabin C (4p)", capacity: 4 },
+    { id: "h-cab4", branchId: "b1", name: "Cabin D", type: "cabin", x: 220, y: 40, width: 200, height: 120, color: "#F5F3FF", borderColor: "#DDD6FE", label: "Cabin D (10p)", capacity: 10 },
+    { id: "h-conf1", branchId: "b1", name: "Conf Alpha", type: "conference", x: 440, y: 40, width: 180, height: 120, color: "#FFF1F2", borderColor: "#FECDD3", label: "Conf Alpha (12p)", capacity: 12 },
+    { id: "h-conf2", branchId: "b1", name: "Conf Beta", type: "conference", x: 640, y: 40, width: 160, height: 120, color: "#FFF1F2", borderColor: "#FECDD3", label: "Conf Beta (6p)", capacity: 6 },
   ];
   const f2Seats: Seat[] = [];
-  addSeatGrid(f2Seats, rand, seatIdx, memberIdx, "h-cab3", "CC", 20, 20, 2, 2, 40, 28, 14, 14, 1.0);
-  addSeatGrid(f2Seats, rand, seatIdx, memberIdx, "h-cab4", "CD", 180, 20, 5, 2, 24, 28, 8, 14, 0.85);
-  addRoomSeat(f2Seats, seatIdx, memberIdx, "h-conf1", "CONF-A", 395, 45, 130, 60, "reserved");
-  addRoomSeat(f2Seats, seatIdx, memberIdx, "h-conf2", "CONF-B", 575, 45, 110, 60, "available");
+  addSeatGrid(f2Seats, rand, seatIdx, memberIdx, "h-cab3", "CC", 40, 40, 2, 2, 44, 30, 18, 16, 1.0);
+  addSeatGrid(f2Seats, rand, seatIdx, memberIdx, "h-cab4", "CD", 220, 40, 5, 2, 26, 30, 10, 16, 0.85);
+  addRoomSeat(f2Seats, seatIdx, memberIdx, "h-conf1", "CONF-A", 460, 65, 140, 70, "reserved");
+  addRoomSeat(f2Seats, seatIdx, memberIdx, "h-conf2", "CONF-B", 660, 65, 120, 70, "available");
 
   const floors: Floor[] = [
-    { id: "h-f0", name: "Ground Floor", level: 0, zones: f0Zones, seats: f0Seats, canvasWidth: 840, canvasHeight: 400 },
-    { id: "h-f1", name: "1st Floor", level: 1, zones: f1Zones, seats: f1Seats, canvasWidth: 840, canvasHeight: 300 },
-    { id: "h-f2", name: "2nd Floor", level: 2, zones: f2Zones, seats: f2Seats, canvasWidth: 840, canvasHeight: 200 },
+    { id: "h-f0", name: "Ground Floor", level: 0, zones: f0Zones, seats: f0Seats, canvasWidth: 1200, canvasHeight: 520 },
+    { id: "h-f1", name: "1st Floor", level: 1, zones: f1Zones, seats: f1Seats, canvasWidth: 1200, canvasHeight: 460 },
+    { id: "h-f2", name: "2nd Floor", level: 2, zones: f2Zones, seats: f2Seats, canvasWidth: 1200, canvasHeight: 380 },
   ];
 
   return {
@@ -191,50 +192,50 @@ function generateGachibowli(): FloorPlan {
   const memberIdx = { v: 0 };
 
   const f0Zones: Zone[] = [
-    { id: "g-rec", branchId: "b2", name: "Reception", type: "reception", x: 20, y: 20, width: 200, height: 100, color: "#F8F6F4", borderColor: "#D6D0C9", label: "Reception" },
-    { id: "g-pantry", branchId: "b2", name: "Pantry & Café", type: "pantry", x: 240, y: 20, width: 160, height: 100, color: "#FFF8E7", borderColor: "#E8D5A8", label: "Pantry & Café" },
-    { id: "g-lounge", branchId: "b2", name: "Collaboration Lounge", type: "lounge", x: 420, y: 20, width: 200, height: 100, color: "#EEF2FF", borderColor: "#C7D2FE", label: "Collaboration Lounge" },
-    { id: "g-hot", branchId: "b2", name: "Hot Desks", type: "hot_desk", x: 20, y: 140, width: 280, height: 260, color: "#F0FDF4", borderColor: "#BBF7D0", label: "Hot Desks (Flexi)" },
-    { id: "g-pb1", branchId: "b2", name: "Phone Booth 1", type: "phone_booth", x: 640, y: 140, width: 70, height: 60, color: "#ECFDF5", borderColor: "#A7F3D0", label: "PB-1" },
-    { id: "g-pb2", branchId: "b2", name: "Phone Booth 2", type: "phone_booth", x: 730, y: 140, width: 70, height: 60, color: "#ECFDF5", borderColor: "#A7F3D0", label: "PB-2" },
+    { id: "g-rec", branchId: "b2", name: "Reception", type: "reception", x: 40, y: 40, width: 240, height: 120, color: "#F9FAFB", borderColor: "#E5E7EB", label: "Reception HQ" },
+    { id: "g-pantry", branchId: "b2", name: "Pantry & Café", type: "pantry", x: 300, y: 40, width: 200, height: 120, color: "#FFFBEB", borderColor: "#FDE68A", label: "Pantry & Café" },
+    { id: "g-lounge", branchId: "b2", name: "Collaboration Lounge", type: "lounge", x: 520, y: 40, width: 260, height: 120, color: "#EFF6FF", borderColor: "#BFDBFE", label: "Collaboration Lounge" },
+    { id: "g-hot", branchId: "b2", name: "Hot Desks", type: "hot_desk", x: 40, y: 180, width: 340, height: 280, color: "#F0FDF4", borderColor: "#BBF7D0", label: "Hot Desks (Flexi)" },
+    { id: "g-pb1", branchId: "b2", name: "Phone Booth 1", type: "phone_booth", x: 400, y: 180, width: 80, height: 80, color: "#FDF4FF", borderColor: "#FBCFE8", label: "PB-1" },
+    { id: "g-pb2", branchId: "b2", name: "Phone Booth 2", type: "phone_booth", x: 500, y: 180, width: 80, height: 80, color: "#FDF4FF", borderColor: "#FBCFE8", label: "PB-2" },
   ];
   const f0Seats: Seat[] = [];
-  addSeatGrid(f0Seats, rand, seatIdx, memberIdx, "g-hot", "HD", 20, 140, 5, 4, 38, 30, 12, 16, 0.55);
-  addRoomSeat(f0Seats, seatIdx, memberIdx, "g-pb1", "PB-01", 653, 155, 44, 30, "occupied");
-  addRoomSeat(f0Seats, seatIdx, memberIdx, "g-pb2", "PB-02", 743, 155, 44, 30, "available");
+  addSeatGrid(f0Seats, rand, seatIdx, memberIdx, "g-hot", "HD", 40, 180, 5, 4, 44, 34, 16, 20, 0.55);
+  addRoomSeat(f0Seats, seatIdx, memberIdx, "g-pb1", "PB-01", 415, 200, 50, 40, "occupied");
+  addRoomSeat(f0Seats, seatIdx, memberIdx, "g-pb2", "PB-02", 515, 200, 50, 40, "available");
 
   // Pin Ravi Kumar + Priya Mehta
   const occ = f0Seats.filter(s => s.status === "occupied");
   if (occ.length >= 2) { occ[0].memberId = "m1"; occ[1].memberId = "m2"; }
 
   const f1Zones: Zone[] = [
-    { id: "g-ded", branchId: "b2", name: "Dedicated Desks", type: "dedicated", x: 20, y: 20, width: 300, height: 260, color: "#FFF7ED", borderColor: "#FED7AA", label: "Dedicated Desks" },
-    { id: "g-cab1", branchId: "b2", name: "Cabin A (4-seater)", type: "cabin", x: 340, y: 20, width: 140, height: 120, color: "#FAF5FF", borderColor: "#E9D5FF", label: "Cabin A (4p)", capacity: 4 },
-    { id: "g-cab2", branchId: "b2", name: "Cabin B (6-seater)", type: "cabin", x: 500, y: 20, width: 160, height: 120, color: "#FAF5FF", borderColor: "#E9D5FF", label: "Cabin B (6p)", capacity: 6 },
-    { id: "g-mgr", branchId: "b2", name: "Manager's Office", type: "manager", x: 340, y: 160, width: 160, height: 100, color: "#FEF2F2", borderColor: "#FECACA", label: "Manager's Office" },
+    { id: "g-ded", branchId: "b2", name: "Dedicated Desks", type: "dedicated", x: 40, y: 40, width: 360, height: 280, color: "#FFF7ED", borderColor: "#FED7AA", label: "Dedicated Desks" },
+    { id: "g-cab1", branchId: "b2", name: "Cabin A (4-seater)", type: "cabin", x: 420, y: 40, width: 160, height: 140, color: "#F5F3FF", borderColor: "#DDD6FE", label: "Cabin A (4p)", capacity: 4 },
+    { id: "g-cab2", branchId: "b2", name: "Cabin B (6-seater)", type: "cabin", x: 600, y: 40, width: 180, height: 140, color: "#F5F3FF", borderColor: "#DDD6FE", label: "Cabin B (6p)", capacity: 6 },
+    { id: "g-mgr", branchId: "b2", name: "Manager's Office", type: "manager", x: 420, y: 200, width: 180, height: 120, color: "#FEF2F2", borderColor: "#FECACA", label: "Manager's Office" },
   ];
   const f1Seats: Seat[] = [];
-  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "g-ded", "DD", 20, 20, 6, 4, 32, 30, 12, 16, 0.78);
-  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "g-cab1", "CA", 340, 20, 2, 2, 40, 30, 15, 15, 0.90);
-  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "g-cab2", "CB", 500, 20, 3, 2, 32, 30, 12, 15, 0.85);
-  addRoomSeat(f1Seats, seatIdx, memberIdx, "g-mgr", "MGR", 360, 185, 120, 50, "occupied");
+  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "g-ded", "DD", 40, 40, 6, 4, 38, 34, 16, 20, 0.78);
+  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "g-cab1", "CA", 420, 40, 2, 2, 46, 34, 20, 20, 0.90);
+  addSeatGrid(f1Seats, rand, seatIdx, memberIdx, "g-cab2", "CB", 600, 40, 3, 2, 38, 34, 14, 20, 0.85);
+  addRoomSeat(f1Seats, seatIdx, memberIdx, "g-mgr", "MGR", 445, 230, 130, 60, "occupied");
 
   const f2Zones: Zone[] = [
-    { id: "g-cab3", branchId: "b2", name: "Cabin C (8-seater)", type: "cabin", x: 20, y: 20, width: 180, height: 120, color: "#FAF5FF", borderColor: "#E9D5FF", label: "Cabin C (8p)", capacity: 8 },
-    { id: "g-cab4", branchId: "b2", name: "Cabin D (4-seater)", type: "cabin", x: 220, y: 20, width: 140, height: 120, color: "#FAF5FF", borderColor: "#E9D5FF", label: "Cabin D (4p)", capacity: 4 },
-    { id: "g-conf1", branchId: "b2", name: "Conf. Room Alpha", type: "conference", x: 380, y: 20, width: 160, height: 100, color: "#FFF1F2", borderColor: "#FECDD3", label: "Alpha (10p)", capacity: 10 },
-    { id: "g-conf2", branchId: "b2", name: "Conf. Room Beta", type: "conference", x: 560, y: 20, width: 160, height: 100, color: "#FFF1F2", borderColor: "#FECDD3", label: "Beta (6p)", capacity: 6 },
+    { id: "g-cab3", branchId: "b2", name: "Cabin C (8-seater)", type: "cabin", x: 40, y: 40, width: 220, height: 140, color: "#F5F3FF", borderColor: "#DDD6FE", label: "Cabin C (8p)", capacity: 8 },
+    { id: "g-cab4", branchId: "b2", name: "Cabin D (4-seater)", type: "cabin", x: 280, y: 40, width: 160, height: 140, color: "#F5F3FF", borderColor: "#DDD6FE", label: "Cabin D (4p)", capacity: 4 },
+    { id: "g-conf1", branchId: "b2", name: "Conf. Room Alpha", type: "conference", x: 460, y: 40, width: 200, height: 140, color: "#FFF1F2", borderColor: "#FECDD3", label: "Alpha (10p)", capacity: 10 },
+    { id: "g-conf2", branchId: "b2", name: "Conf. Room Beta", type: "conference", x: 680, y: 40, width: 180, height: 140, color: "#FFF1F2", borderColor: "#FECDD3", label: "Beta (6p)", capacity: 6 },
   ];
   const f2Seats: Seat[] = [];
-  addSeatGrid(f2Seats, rand, seatIdx, memberIdx, "g-cab3", "CC", 20, 20, 4, 2, 30, 30, 10, 15, 0.75);
-  addSeatGrid(f2Seats, rand, seatIdx, memberIdx, "g-cab4", "CD", 220, 20, 2, 2, 40, 30, 15, 15, 1.0);
-  addRoomSeat(f2Seats, seatIdx, memberIdx, "g-conf1", "CONF-A", 400, 45, 120, 55, "reserved");
-  addRoomSeat(f2Seats, seatIdx, memberIdx, "g-conf2", "CONF-B", 580, 45, 120, 55, "available");
+  addSeatGrid(f2Seats, rand, seatIdx, memberIdx, "g-cab3", "CC", 40, 40, 4, 2, 36, 34, 12, 20, 0.75);
+  addSeatGrid(f2Seats, rand, seatIdx, memberIdx, "g-cab4", "CD", 280, 40, 2, 2, 46, 34, 20, 20, 1.0);
+  addRoomSeat(f2Seats, seatIdx, memberIdx, "g-conf1", "CONF-A", 490, 75, 140, 70, "reserved");
+  addRoomSeat(f2Seats, seatIdx, memberIdx, "g-conf2", "CONF-B", 705, 75, 130, 70, "available");
 
   const floors: Floor[] = [
-    { id: "g-f0", name: "Ground Floor", level: 0, zones: f0Zones, seats: f0Seats, canvasWidth: 860, canvasHeight: 450 },
-    { id: "g-f1", name: "1st Floor", level: 1, zones: f1Zones, seats: f1Seats, canvasWidth: 860, canvasHeight: 300 },
-    { id: "g-f2", name: "2nd Floor", level: 2, zones: f2Zones, seats: f2Seats, canvasWidth: 860, canvasHeight: 180 },
+    { id: "g-f0", name: "Ground Floor", level: 0, zones: f0Zones, seats: f0Seats, canvasWidth: 1200, canvasHeight: 520 },
+    { id: "g-f1", name: "1st Floor", level: 1, zones: f1Zones, seats: f1Seats, canvasWidth: 1200, canvasHeight: 460 },
+    { id: "g-f2", name: "2nd Floor", level: 2, zones: f2Zones, seats: f2Seats, canvasWidth: 1200, canvasHeight: 380 },
   ];
 
   return {
