@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
 
     // Construct the system prompt using the context passed from the client
     const systemPrompt = `You are JARVIS, the exclusive AI assistant for the Workspace Owner of OneSpace. 
@@ -30,7 +30,9 @@ Here is the current live data for the workspace:
 - Current MRR: $${context?.mrr?.toLocaleString() || 0}
 - Overall Risk Score: ${context?.averageRisk || 0}/100
 - Open Support Tickets: ${context?.openTickets || 0}
+- Overdue Invoices: ${context?.overdueInvoices || 0}
 - Recent Visitors: ${context?.recentVisitors || 0}
+- Total Bookings: ${context?.totalBookings || 0}
 
 Answer the owner's query based on this data.`;
 

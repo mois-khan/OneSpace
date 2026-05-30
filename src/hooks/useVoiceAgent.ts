@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { useMembers, useTickets, useAllBookings, useAppActions } from "@/lib/store";
+import { useAllMembers, useTickets, useAllBookings, useBranches, useInvoices, useVisitors } from "@/lib/store";
 
 export function useVoiceAgent() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,21 +11,34 @@ export function useVoiceAgent() {
   const [chatHistory, setChatHistory] = useState<{role: string, text: string}[]>([]);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
   const deepgramSocketRef = useRef<any>(null);
 
   // Get live store data for context
-  const members = useMembers();
+  const members = useAllMembers();
+  const branches = useBranches();
   const tickets = useTickets();
   const bookings = useAllBookings();
+  const invoices = useInvoices();
+  const visitors = useVisitors();
+  
   const mrr = members.reduce((acc, m) => acc + (m.status === 'active' ? m.monthlyFee : 0), 0);
+  const overdueInvoices = invoices.filter(i => i.status === "overdue").length;
+  const committedTranscriptRef = useRef("");
 
   const toggleAgent = useCallback(() => {
-    setIsOpen(prev => !prev);
-    if (isOpen) {
-      stopListening();
-    }
-  }, [isOpen]);
+    setIsOpen(prev => {
+      if (prev) {
+        // If closing, forcefully stop everything without triggering AI
+        setIsListening(false);
+        setIsSpeaking(false);
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+          mediaRecorderRef.current.stop();
+        }
+        if (deepgramSocketRef.current) deepgramSocketRef.current.close();
+      }
+      return !prev;
+    });
+  }, []);
 
   const processAIResponse = async (text: string) => {
     try {
@@ -43,10 +56,14 @@ export function useVoiceAgent() {
           message: text,
           history: chatHistory,
           context: {
+            branches: branches.length,
             totalMembers: members.length,
             openTickets: tickets.filter(t => t.status === "open").length,
             mrr,
             averageRisk: Math.round(members.reduce((acc, m) => acc + (m.riskScore || 0), 0) / (members.length || 1)),
+            recentVisitors: visitors.length,
+            overdueInvoices,
+            totalBookings: bookings.length
           }
         }),
       });
@@ -100,8 +117,11 @@ export function useVoiceAgent() {
         throw new Error("Deepgram token is missing");
       }
 
-      const socket = new WebSocket("wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true", ["token", token]);
+      const socket = new WebSocket("wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&endpointing=3000", ["token", token]);
       deepgramSocketRef.current = socket;
+
+      committedTranscriptRef.current = "";
+      setTranscript("");
 
       socket.onopen = () => {
         setIsListening(true);
@@ -113,20 +133,23 @@ export function useVoiceAgent() {
         mediaRecorderRef.current?.start(250); // Send audio chunks every 250ms
       };
 
-      let currentTranscript = "";
-
       socket.onmessage = (message) => {
         const data = JSON.parse(message.data);
         if (data.type === "Results") {
           const tr = data.channel.alternatives[0].transcript;
-          if (tr) {
-            currentTranscript += " " + tr;
-            setTranscript(currentTranscript.trim());
+          if (data.is_final) {
+            if (tr) {
+              committedTranscriptRef.current += (committedTranscriptRef.current ? " " : "") + tr;
+              setTranscript(committedTranscriptRef.current);
+            }
             
-            if (data.is_final) {
-              // Process the final sentence
-              stopListening();
-              processAIResponse(currentTranscript.trim());
+            // Auto-trigger if Deepgram detects a long silence (speech_final)
+            if (data.speech_final && committedTranscriptRef.current.trim()) {
+               stopAndSubmit();
+            }
+          } else {
+            if (tr) {
+              setTranscript(committedTranscriptRef.current + (committedTranscriptRef.current ? " " : "") + tr);
             }
           }
         }
@@ -134,7 +157,7 @@ export function useVoiceAgent() {
 
       socket.onerror = (error) => {
         console.error("Deepgram Error:", error);
-        stopListening();
+        setIsListening(false);
       };
 
     } catch (error) {
@@ -154,6 +177,16 @@ export function useVoiceAgent() {
     }
   };
 
+  const stopAndSubmit = () => {
+    stopListening();
+    const finalTr = committedTranscriptRef.current || transcript;
+    if (finalTr.trim()) {
+      processAIResponse(finalTr.trim());
+      setTranscript("");
+      committedTranscriptRef.current = "";
+    }
+  };
+
   return {
     isOpen,
     isListening,
@@ -162,6 +195,6 @@ export function useVoiceAgent() {
     chatHistory,
     toggleAgent,
     startListening,
-    stopListening
+    stopListening: stopAndSubmit
   };
 }

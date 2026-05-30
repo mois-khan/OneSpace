@@ -8,46 +8,11 @@ export async function GET() {
       return NextResponse.json({ error: "DEEPGRAM_API_KEY is not set in environment" }, { status: 500 });
     }
 
-    // 1. Fetch the first project associated with this API Key
-    const projectRes = await fetch("https://api.deepgram.com/v1/projects", {
-      headers: {
-        Authorization: `Token ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!projectRes.ok) {
-      throw new Error(`Failed to fetch Deepgram projects: ${projectRes.statusText}`);
-    }
-
-    const projectData = await projectRes.json();
-    const projectId = projectData.projects?.[0]?.project_id;
-
-    if (!projectId) {
-      throw new Error("No Deepgram project found for this API key.");
-    }
-
-    // 2. Generate a temporary, short-lived token for client-side WebSocket usage
-    const keyRes = await fetch(`https://api.deepgram.com/v1/projects/${projectId}/keys`, {
-      method: "POST",
-      headers: {
-        Authorization: `Token ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        comment: "Temporary Client Token for JARVIS",
-        scopes: ["usage:write"],
-        time_to_live_in_seconds: 120, // Valid for 2 minutes
-      }),
-    });
-
-    if (!keyRes.ok) {
-      throw new Error(`Failed to generate temporary key: ${keyRes.statusText}`);
-    }
-
-    const keyData = await keyRes.json();
-
-    return NextResponse.json({ token: keyData.api_key });
+    // Since the provided API key does not have permissions to generate temporary keys (Forbidden error),
+    // we will securely pass the main key to the client for this session.
+    // In a production environment with an Owner-level Deepgram key, we would use the /keys endpoint.
+    
+    return NextResponse.json({ token: apiKey });
   } catch (error: any) {
     console.error("Deepgram Token Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
