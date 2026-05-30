@@ -20,6 +20,8 @@ import {
   RefreshCcw,
   MessageSquare,
   Send,
+  Paperclip,
+  MessageCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
@@ -29,12 +31,13 @@ export default function MemberProfilePage() {
   const router = useRouter();
   const members = useAllMembers();
   const branches = useBranches();
-  const { renewMember } = useAppActions();
+  const { renewMember, sendMessage } = useAppActions();
   const allTickets = useTickets();
   const allConversations = useConversations();
   const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "invoices" | "tickets" | "messages">("overview");
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [attachment, setAttachment] = useState<{url: string, name: string} | null>(null);
 
   const memberId = params.id as string;
   const member = members.find((m) => m.id === memberId);
@@ -43,15 +46,34 @@ export default function MemberProfilePage() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyText.trim()) return;
-    useAppActions.getState().sendMessage({
+    if (!replyText.trim() && !attachment) return;
+    sendMessage({
       conversationId: conversation?.id,
       memberId: member.id,
       branchId: member.branchId,
       text: replyText,
-      senderId: "admin"
+      senderId: "admin",
+      attachmentUrl: attachment?.url,
+      attachmentName: attachment?.name
     });
     setReplyText("");
+    setAttachment(null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Simulate reading file to a Data URL
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setAttachment({
+        url: event.target?.result as string,
+        name: file.name
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // Reset input
   };
 
   if (!member) {
@@ -222,6 +244,17 @@ export default function MemberProfilePage() {
               <div className="bg-white rounded-xl border border-cs-gray-200 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-semibold text-cs-black text-lg">Contact Information</h3>
+                  <div className="flex items-center gap-2">
+                    <a href={`tel:${member.phone}`} className="flex items-center justify-center w-8 h-8 rounded-full bg-cs-gray-100 text-cs-gray-600 hover:bg-cs-black hover:text-white transition-colors" title="Call">
+                      <Phone className="w-4 h-4" />
+                    </a>
+                    <a href={`mailto:${member.email}`} className="flex items-center justify-center w-8 h-8 rounded-full bg-cs-gray-100 text-cs-gray-600 hover:bg-cs-black hover:text-white transition-colors" title="Email">
+                      <Mail className="w-4 h-4" />
+                    </a>
+                    <a href={`https://wa.me/${member.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-8 h-8 rounded-full bg-cs-gray-100 text-green-600 hover:bg-green-500 hover:text-white transition-colors" title="WhatsApp">
+                      <MessageCircle className="w-4 h-4" />
+                    </a>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
@@ -365,6 +398,90 @@ export default function MemberProfilePage() {
               <FileText className="w-12 h-12 text-cs-gray-300 mb-4" />
               <h3 className="text-lg font-semibold text-cs-black mb-1">No bookings yet</h3>
               <p className="text-sm text-cs-gray-500">This member hasn&apos;t booked any rooms recently.</p>
+            </div>
+          )}
+
+          {activeTab === "messages" && (
+            <div className="max-w-3xl flex flex-col min-h-[500px] h-[calc(100vh-16rem)] border border-cs-gray-200 rounded-2xl bg-white overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+              <div className="p-4 border-b border-cs-gray-200 bg-cs-gray-50 flex justify-between items-center shrink-0">
+                <h3 className="font-semibold text-cs-black text-lg flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" /> Direct Message
+                </h3>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+                {!conversation || conversation.messages.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-cs-gray-500">
+                    <MessageSquare className="w-12 h-12 text-cs-gray-200 mb-3" />
+                    <p>No messages yet. Send a message to start a conversation.</p>
+                  </div>
+                ) : (
+                  conversation.messages.map(msg => (
+                    <div key={msg.id} className={`flex max-w-[80%] ${msg.senderId === "admin" ? "ml-auto" : "mr-auto"}`}>
+                      <div className={`px-4 py-3 rounded-2xl text-sm ${
+                        msg.senderId === "admin" 
+                          ? "bg-cs-black text-white rounded-tr-sm" 
+                          : "bg-cs-gray-100 text-cs-black border border-cs-gray-200 rounded-tl-sm"
+                      }`}>
+                        {msg.text}
+                        {msg.attachmentUrl && (
+                          <div className="mt-2">
+                            {msg.attachmentUrl.startsWith("data:image/") ? (
+                              <img src={msg.attachmentUrl} alt={msg.attachmentName} className="max-w-full max-h-[200px] rounded-lg border border-black/10 object-contain" />
+                            ) : (
+                              <div className="flex items-center gap-2 p-2 bg-black/10 rounded-lg text-xs">
+                                <Paperclip className="w-4 h-4" />
+                                <span className="truncate max-w-[150px] font-medium">{msg.attachmentName}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="p-4 border-t border-cs-gray-200 bg-cs-gray-50/50 shrink-0">
+                {attachment && (
+                  <div className="mb-3 flex items-center gap-2 bg-white border border-cs-gray-200 rounded-lg p-2 max-w-sm">
+                    {attachment.url.startsWith("data:image/") ? (
+                      <div className="w-8 h-8 rounded bg-cs-gray-100 bg-cover bg-center" style={{ backgroundImage: `url(${attachment.url})` }} />
+                    ) : (
+                      <Paperclip className="w-4 h-4 text-cs-gray-500 shrink-0" />
+                    )}
+                    <span className="text-xs text-cs-black font-medium truncate flex-1">{attachment.name}</span>
+                    <button type="button" onClick={() => setAttachment(null)} className="text-cs-gray-400 hover:text-cs-red text-lg font-bold px-1">
+                      ×
+                    </button>
+                  </div>
+                )}
+                <form onSubmit={handleSendMessage} className="relative flex items-end gap-3">
+                  <label className="shrink-0 w-[48px] h-[48px] flex items-center justify-center bg-white border-2 border-cs-gray-200 text-cs-gray-500 rounded-full hover:bg-cs-gray-50 hover:text-cs-black hover:border-cs-gray-300 transition-all cursor-pointer shadow-sm">
+                    <Paperclip className="w-5 h-5" />
+                    <input type="file" className="hidden" onChange={handleFileChange} />
+                  </label>
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 max-h-32 min-h-[48px] bg-white border-2 border-cs-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-cs-red/10 focus:border-cs-red resize-none transition-all shadow-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage(e);
+                      }
+                    }}
+                  />
+                  <button 
+                    type="submit"
+                    disabled={!replyText.trim() && !attachment}
+                    className="shrink-0 w-[48px] h-[48px] flex items-center justify-center bg-cs-red text-white rounded-full hover:bg-cs-red-dark hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all shadow-md"
+                  >
+                    <Send className="w-5 h-5 ml-1" />
+                  </button>
+                </form>
+              </div>
             </div>
           )}
         </div>

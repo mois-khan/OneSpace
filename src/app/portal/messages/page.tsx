@@ -8,7 +8,8 @@ import {
   Send,
   MessageSquare,
   Check,
-  CheckCheck
+  CheckCheck,
+  Paperclip
 } from "lucide-react";
 
 export default function PortalMessagesPage() {
@@ -17,6 +18,7 @@ export default function PortalMessagesPage() {
   const { sendMessage, markConversationRead } = useAppActions();
   
   const [replyText, setReplyText] = useState("");
+  const [attachment, setAttachment] = useState<{url: string, name: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   if (!member) return null;
@@ -37,20 +39,37 @@ export default function PortalMessagesPage() {
     if (conversation) {
       markConversationRead(conversation.id, member.id);
     }
-  }, [conversation, member.id, markConversationRead]);
+  }, [conversation?.id, member.id, markConversationRead]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyText.trim()) return;
+    if (!replyText.trim() && !attachment) return;
 
     sendMessage({
       conversationId: conversation?.id,
       memberId: member.id,
       branchId: member.branchId,
       text: replyText,
-      senderId: member.id
+      senderId: member.id,
+      attachmentUrl: attachment?.url,
+      attachmentName: attachment?.name
     });
     setReplyText("");
+    setAttachment(null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setAttachment({
+        url: event.target?.result as string,
+        name: file.name
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   return (
@@ -107,6 +126,18 @@ export default function PortalMessagesPage() {
                       : "bg-white text-cs-black border border-cs-gray-200 rounded-2xl rounded-tl-sm"
                   )}>
                     {msg.text}
+                    {msg.attachmentUrl && (
+                      <div className="mt-2">
+                        {msg.attachmentUrl.startsWith("data:image/") ? (
+                          <img src={msg.attachmentUrl} alt={msg.attachmentName} className="max-w-full max-h-[200px] rounded-lg border border-white/20 object-contain" />
+                        ) : (
+                          <div className="flex items-center gap-2 p-2 bg-black/10 rounded-lg text-xs">
+                            <Paperclip className="w-4 h-4" />
+                            <span className="truncate max-w-[150px] font-medium">{msg.attachmentName}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 mt-1 px-1">
                     <span className="text-[10px] text-cs-gray-400">{format(new Date(msg.timestamp), "h:mm a")}</span>
@@ -123,13 +154,30 @@ export default function PortalMessagesPage() {
       </div>
 
       {/* Message Input */}
-      <div className="p-4 sm:p-6 border-t border-cs-gray-200 bg-white shrink-0">
+      <div className="p-4 sm:p-6 border-t border-cs-gray-200 bg-cs-gray-50/50 shrink-0">
+        {attachment && (
+          <div className="mb-3 flex items-center gap-2 bg-white border border-cs-gray-200 rounded-lg p-2 max-w-sm">
+            {attachment.url.startsWith("data:image/") ? (
+              <div className="w-8 h-8 rounded bg-cs-gray-100 bg-cover bg-center" style={{ backgroundImage: `url(${attachment.url})` }} />
+            ) : (
+              <Paperclip className="w-4 h-4 text-cs-gray-500 shrink-0" />
+            )}
+            <span className="text-xs text-cs-black font-medium truncate flex-1">{attachment.name}</span>
+            <button type="button" onClick={() => setAttachment(null)} className="text-cs-gray-400 hover:text-cs-red text-lg font-bold px-1">
+              ×
+            </button>
+          </div>
+        )}
         <form onSubmit={handleSend} className="relative flex items-end gap-3">
+          <label className="shrink-0 w-[52px] h-[52px] flex items-center justify-center bg-white border-2 border-cs-gray-200 text-cs-gray-500 rounded-full hover:bg-cs-gray-50 hover:text-cs-black hover:border-cs-gray-300 transition-all cursor-pointer shadow-sm">
+            <Paperclip className="w-5 h-5" />
+            <input type="file" className="hidden" onChange={handleFileChange} />
+          </label>
           <textarea
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 max-h-32 min-h-[52px] bg-cs-gray-50 border border-cs-gray-200 rounded-2xl px-5 py-3.5 text-sm focus:ring-cs-red focus:border-cs-red resize-none"
+            className="flex-1 max-h-32 min-h-[52px] bg-white border-2 border-cs-gray-200 rounded-2xl px-5 py-3.5 text-sm focus:ring-4 focus:ring-cs-red/10 focus:border-cs-red resize-none transition-all shadow-sm"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -139,8 +187,8 @@ export default function PortalMessagesPage() {
           />
           <button 
             type="submit"
-            disabled={!replyText.trim()}
-            className="shrink-0 w-[52px] h-[52px] flex items-center justify-center bg-cs-red text-white rounded-full hover:bg-cs-red-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            disabled={(!replyText.trim() && !attachment)}
+            className="shrink-0 w-[52px] h-[52px] flex items-center justify-center bg-cs-red text-white rounded-full hover:bg-cs-red-dark hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all shadow-md"
           >
             <Send className="w-5 h-5 ml-1" />
           </button>

@@ -81,7 +81,7 @@ type Action =
   | { type: "CREATE_TICKET"; payload: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "comments"> }
   | { type: "UPDATE_TICKET_STATUS"; ticketId: string; status: Ticket["status"] }
   | { type: "ADD_TICKET_COMMENT"; ticketId: string; comment: Omit<TicketComment, "id" | "timestamp"> }
-  | { type: "SEND_MESSAGE"; conversationId?: string; memberId: string; branchId: string; text: string; senderId: string }
+  | { type: "SEND_MESSAGE"; conversationId?: string; memberId: string; branchId: string; text: string; senderId: string; attachmentUrl?: string; attachmentName?: string }
   | { type: "MARK_CONVERSATION_READ"; conversationId: string; viewerId: string }
   | { type: "PORTAL_LOGIN"; memberId: string }
   | { type: "PORTAL_LOGOUT" }
@@ -188,6 +188,8 @@ function reducer(state: AppState, action: Action): AppState {
         text: action.text,
         timestamp: new Date(state.now).toISOString(),
         read: false,
+        attachmentUrl: action.attachmentUrl,
+        attachmentName: action.attachmentName,
       };
       
       let convs = [...state.conversations];
@@ -213,15 +215,27 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, conversations: convs };
     }
     case "MARK_CONVERSATION_READ": {
+      let changed = false;
+      const newConvs = state.conversations.map(c => {
+        if (c.id !== action.conversationId) return c;
+        let cChanged = false;
+        const newMsgs = c.messages.map(m => {
+          if (m.senderId !== action.viewerId && !m.read) {
+            cChanged = true;
+            changed = true;
+            return { ...m, read: true };
+          }
+          return m;
+        });
+        if (cChanged) return { ...c, messages: newMsgs };
+        return c;
+      });
+
+      if (!changed) return state;
+
       return {
         ...state,
-        conversations: state.conversations.map(c => {
-          if (c.id !== action.conversationId) return c;
-          return {
-            ...c,
-            messages: c.messages.map(m => m.senderId !== action.viewerId ? { ...m, read: true } : m)
-          };
-        })
+        conversations: newConvs
       };
     }
     case "SET_BRANCH": {
@@ -892,7 +906,7 @@ export function useAppActions() {
         dispatch({ type: "UPDATE_TICKET_STATUS", ticketId, status }),
       addTicketComment: (ticketId: string, comment: Omit<TicketComment, "id" | "timestamp">) =>
         dispatch({ type: "ADD_TICKET_COMMENT", ticketId, comment }),
-      sendMessage: (payload: { conversationId?: string; memberId: string; branchId: string; text: string; senderId: string }) =>
+      sendMessage: (payload: { conversationId?: string; memberId: string; branchId: string; text: string; senderId: string; attachmentUrl?: string; attachmentName?: string }) =>
         dispatch({ type: "SEND_MESSAGE", ...payload }),
       markConversationRead: (conversationId: string, viewerId: string) =>
         dispatch({ type: "MARK_CONVERSATION_READ", conversationId, viewerId }),

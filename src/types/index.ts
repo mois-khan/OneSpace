@@ -72,6 +72,8 @@ export interface Message {
   text: string;
   timestamp: string;
   read: boolean;
+  attachmentUrl?: string;
+  attachmentName?: string;
 }
 
 export interface Conversation {
