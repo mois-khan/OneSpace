@@ -79,7 +79,8 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale, zoneTyp
       onMouseUp={handleMouseUp}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => { setIsHovered(false); }}
-      style={{ cursor: isDragging ? "grabbing" : "pointer" }}
+      style={{ cursor: onDragEnd ? (isDragging ? "grabbing" : "grab") : "pointer" }}
+      className={onDragEnd ? "panning-disabled" : ""}
     >
       {/* Selection glow ring */}
       {isSelected && (
@@ -252,30 +253,30 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale, zoneTyp
 
       {/* Hover Tooltip — richer when occupied */}
       {isHovered && (
-        <g transform={`translate(${seatW / 2}, ${-8})`}>
+        <g>
           {(() => {
             const lines: Array<{ text: string; color: string; size: number; weight: number }> = [];
-            lines.push({ text: seat.code, color: "#fff", size: 9, weight: 700 });
+            lines.push({ text: seat.code, color: "#fff", size: 10, weight: 700 });
             lines.push({
               text: seat.status.charAt(0).toUpperCase() + seat.status.slice(1),
               color: "#94A3B8",
-              size: 7.5,
+              size: 8.5,
               weight: 400,
             });
             if (memberInfo) {
-              lines.push({ text: memberInfo.name, color: "#E2E8F0", size: 8, weight: 600 });
+              lines.push({ text: memberInfo.name, color: "#E2E8F0", size: 9.5, weight: 600 });
               const plan = memberInfo.planType.replace("_", " ");
               lines.push({
                 text: `${plan} · ₹${(memberInfo.monthlyFee / 1000).toFixed(1)}k/mo`,
                 color: "#94A3B8",
-                size: 7.5,
+                size: 8.5,
                 weight: 400,
               });
               if (memberInfo.company) {
                 lines.push({
                   text: memberInfo.company,
                   color: "#94A3B8",
-                  size: 7,
+                  size: 8,
                   weight: 400,
                 });
               }
@@ -283,41 +284,48 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale, zoneTyp
               lines.push({
                 text: `Payment: ${paymentStatus || "Unknown"}`,
                 color: paymentStatus === "overdue" ? "#FCA5A5" : paymentStatus === "paid" ? "#86EFAC" : "#FCD34D",
-                size: 7,
+                size: 8,
                 weight: 500,
               });
               lines.push({
                 text: `Contract: ${contractDays}d left`,
                 color: contractDays < 30 ? "#FCA5A5" : "#94A3B8",
-                size: 7,
+                size: 8,
                 weight: 500,
               });
             }
-            const rowH = 11;
-            const padY = 8;
+            const rowH = 13;
+            const padY = 10;
             const boxH = lines.length * rowH + padY;
-            const boxY = -boxH - 6;
+            const isNearTop = seat.y < boxH + 20;
+            const boxY = isNearTop ? 6 : -boxH - 6;
+            const toolTipY = isNearTop ? seatH + 8 : -8;
+            
             return (
-              <>
+              <g transform={`translate(${seatW / 2}, ${toolTipY})`}>
                 <rect
-                  x={-78}
+                  x={-85}
                   y={boxY}
-                  width={156}
+                  width={170}
                   height={boxH}
                   rx={8}
                   fill="#0D1B2A"
                   opacity={0.95}
                 />
-                <polygon points="-5,0 5,0 0,5" fill="#0D1B2A" opacity={0.95} />
+                <polygon 
+                  points={isNearTop ? "-5,6 5,6 0,0" : "-5,-1 5,-1 0,4"} 
+                  fill="#0D1B2A" 
+                  opacity={0.95} 
+                />
                 {lines.map((l, i) => {
                   if (i === 2 && memberInfo) {
                     // Divider above the member name
                     return (
                       <g key={`g-${i}`}>
                         <line
-                          x1={-58}
+                          x1={-68}
                           y1={boxY + padY / 2 + i * rowH - 3}
-                          x2={58}
+                          x2={68}
                           y2={boxY + padY / 2 + i * rowH - 3}
                           stroke="#334155"
                           strokeWidth={0.5}
@@ -351,7 +359,7 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale, zoneTyp
                     </text>
                   );
                 })}
-              </>
+              </g>
             );
           })()}
         </g>

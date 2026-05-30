@@ -118,27 +118,36 @@ export function MapContainer({
     return m;
   }, [zones]);
 
+  const computedCanvasWidth = useMemo(() => {
+    return Math.max(canvasWidth, ...zones.map((z) => z.x + z.width + 50));
+  }, [canvasWidth, zones]);
+
+  const computedCanvasHeight = useMemo(() => {
+    return Math.max(canvasHeight, ...zones.map((z) => z.y + z.height + 80));
+  }, [canvasHeight, zones]);
+
   return (
-    <div className="flex-1 rounded-xl border border-cs-gray-200 overflow-hidden relative shadow-sm" style={{ background: "linear-gradient(145deg, #FAFBFC 0%, #F1F5F9 100%)" }}>
+    <div className="flex-1 rounded-xl border border-cs-gray-200 overflow-hidden relative shadow-sm" style={{ background: "linear-gradient(145deg, #F1F5F9 0%, #E2E8F0 100%)" }}>
       <TransformWrapper
         initialScale={1}
         minScale={0.4}
         maxScale={4}
         centerOnInit
         onTransform={(ref) => setScale(ref.state.scale)}
-        panning={{ excluded: [] }}
+        panning={{ excluded: ["panning-disabled"] }}
         wheel={{ step: 0.06 }}
       >
         <ControlsBridge controlsRef={controlsRef} />
         <TransformComponent
           wrapperStyle={{ width: "100%", height: "100%" }}
-          contentStyle={{ width: canvasWidth, height: canvasHeight }}
+          contentStyle={{ width: computedCanvasWidth, height: computedCanvasHeight }}
         >
           <svg
-            width={canvasWidth}
-            height={canvasHeight}
-            viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+            width={computedCanvasWidth}
+            height={computedCanvasHeight}
+            viewBox={`0 0 ${computedCanvasWidth} ${computedCanvasHeight}`}
             className="select-none"
+            style={{ overflow: "visible" }}
           >
             {/* ──── DEFS ──── */}
             <defs>
@@ -160,15 +169,15 @@ export function MapContainer({
             </defs>
 
             {/* ──── BACKGROUND ──── */}
-            <rect width="100%" height="100%" fill="#FAFBFC" />
-            <rect width="100%" height="100%" fill="url(#grid-sm)" />
-            <rect width="100%" height="100%" fill="url(#grid-lg)" />
+            <rect width="100%" height="100%" fill="#E2E8F0" />
+            <rect width="100%" height="100%" fill="url(#grid-sm)" stroke="#CBD5E1" />
+            <rect width="100%" height="100%" fill="url(#grid-lg)" stroke="#94A3B8" />
 
             {/* ──── OUTER WALL ──── */}
             <rect
               x={14} y={14}
-              width={canvasWidth - 28}
-              height={canvasHeight - 28}
+              width={computedCanvasWidth - 28}
+              height={computedCanvasHeight - 28}
               rx={10}
               fill="none"
               stroke="#94A3B8"
@@ -233,7 +242,7 @@ export function MapContainer({
                   seat={seat}
                   isSelected={selectedSeat?.id === seat.id}
                   onSelect={onSeatSelect}
-                  onDragEnd={handleDragEnd}
+                  onDragEnd={isEditMode ? handleDragEnd : undefined}
                   scale={scale}
                   zoneType={zoneIdToType.get(seat.zoneId)}
                 />
@@ -242,8 +251,8 @@ export function MapContainer({
 
             {/* ──── WATERMARK ──── */}
             <text
-              x={canvasWidth / 2}
-              y={canvasHeight - 6}
+              x={computedCanvasWidth / 2}
+              y={computedCanvasHeight - 6}
               textAnchor="middle"
               fill="#CBD5E1"
               fontSize={9}

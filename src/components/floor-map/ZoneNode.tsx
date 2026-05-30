@@ -54,6 +54,7 @@ export function ZoneNode({ zone, isEditMode, onDragEnd, onDelete, scale }: ZoneN
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       style={{ cursor: isEditMode ? (isDragging ? "grabbing" : "grab") : "default" }}
+      className={isEditMode ? "panning-disabled" : ""}
     >
       <rect
         width={zone.width}

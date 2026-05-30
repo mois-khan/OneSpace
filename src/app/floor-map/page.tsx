@@ -53,9 +53,10 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
   const { floorPlans } = useAppState();
   const { onboardMember, saveFloorPlan } = useAppActions();
 
-  // If we don't have a floor plan yet for this branch, we should gracefully handle it
-  // But buildInitialState populates them all.
-  const floorPlan: FloorPlan = floorPlans[branchId];
+  // Fallback for when state is hydrated from an older version of localStorage
+  // that doesn't have floorPlans.
+  const fallbackPlan = useMemo(() => generateFloorPlan(branchId), [branchId]);
+  const floorPlan: FloorPlan = floorPlans?.[branchId] || fallbackPlan;
   
   const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -214,7 +215,14 @@ function FloorMapContent({ branchId, branches, onBranchChange }: ContentProps) {
         activeFloorId={currentFloorId}
         onFloorChange={setActiveFloorId}
         isEditMode={isEditMode}
-        onToggleEditMode={() => setIsEditMode(prev => !prev)}
+        onToggleEditMode={() => {
+          if (isEditMode && activeFloor) {
+            // Revert to saved state
+            setFloorZones(prev => ({ ...prev, [currentFloorId]: activeFloor.zones }));
+            setFloorSeats(prev => ({ ...prev, [currentFloorId]: activeFloor.seats }));
+          }
+          setIsEditMode(prev => !prev);
+        }}
         onSaveLayout={handleSaveLayout}
       />
 
