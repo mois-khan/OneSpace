@@ -10,6 +10,7 @@ import type {
   PreRegistration,
   Room,
   Visitor,
+  FloorPlan,
 } from "@/types";
 import { generateFloorPlan } from "@/lib/data/floor-plan";
 
@@ -26,6 +27,7 @@ export interface AppState {
   invoices: Invoice[];
   notifications: Notification[];
   activity: ActivityEvent[];
+  floorPlans: Record<string, FloorPlan>;
   occupancyTrend: Array<Record<string, string | number>>;
   selectedBranchId: string;
   /** ms anchor for "now" so SSR/CSR stay consistent within a session */

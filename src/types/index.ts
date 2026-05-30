@@ -204,3 +204,38 @@ export interface CurrentUser {
    */
   branchScope: string;
 }
+
+export interface Zone {
+  id: string;
+  branchId: string;
+  name: string;
+  type: "hot_desk" | "dedicated" | "cabin" | "conference" | "phone_booth" | "lounge" | "reception" | "pantry" | "manager";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+  borderColor: string;
+  label: string;
+  capacity?: number;
+}
+
+export interface Floor {
+  id: string;
+  name: string;
+  level: number;
+  zones: Zone[];
+  seats: Seat[];
+  canvasWidth: number;
+  canvasHeight: number;
+}
+
+export interface FloorPlan {
+  zones: Zone[];
+  seats: Seat[];
+  canvasWidth: number;
+  canvasHeight: number;
+  branchName: string;
+  address: string;
+  floors: Floor[];
+}

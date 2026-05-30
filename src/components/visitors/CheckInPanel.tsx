@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMembers, useBranch, useAppActions } from "@/lib/store";
+import { useMembers, useBranch, useAppActions, usePreRegistrations } from "@/lib/store";
 import { toast } from "sonner";
 
 type Tab = "walk-in" | "pre-register" | "kiosk";
@@ -101,6 +101,7 @@ function WalkInTab({
   members: ReturnType<typeof useMembers>;
   onCheckIn: CheckInPanelProps["onCheckIn"];
 }) {
+  const preRegs = usePreRegistrations("all");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [purpose, setPurpose] = useState(PURPOSES[0]);
@@ -109,6 +110,26 @@ function WalkInTab({
   const [isPhotoTaken, setIsPhotoTaken] = useState(false);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [doneId, setDoneId] = useState<string | null>(null);
+  
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanCode, setScanCode] = useState("");
+  
+  const handleScanSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = scanCode.trim().toUpperCase();
+    const found = preRegs.find(p => p.inviteCode.toUpperCase() === code);
+    if (found) {
+      setName(found.visitorName);
+      setPhone(found.phone.replace("+91 ", ""));
+      setPurpose(found.purpose);
+      setHostQuery(found.hostName);
+      setIsScanning(false);
+      setScanCode("");
+      toast.success("Details auto-filled from invite!");
+    } else {
+      toast.error("Invite code not found");
+    }
+  };
 
   const hostMatches = useMemo(() => {
     const q = hostQuery.trim().toLowerCase();
@@ -176,9 +197,37 @@ function WalkInTab({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3.5">
-      <Field label="Full name *">
-        <input
+    <div className="space-y-4">
+      {!isScanning ? (
+        <button
+          type="button"
+          onClick={() => setIsScanning(true)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-dashed border-status-blue/40 bg-[#2563EB08] text-status-blue text-[12px] font-medium hover:bg-[#2563EB14] transition-all"
+        >
+          <QrCode className="w-3.5 h-3.5" />
+          Scan Pre-register QR
+        </button>
+      ) : (
+        <div className="p-3 border border-status-blue/30 bg-[#2563EB05] rounded-xl animate-in slide-in-from-top-2 duration-200">
+          <form onSubmit={handleScanSubmit} className="flex gap-2">
+            <input
+              autoFocus
+              value={scanCode}
+              onChange={(e) => setScanCode(e.target.value)}
+              placeholder="Enter invite code (e.g. OS-A1B2)"
+              className="flex-1 px-3 py-2 border border-status-blue/20 rounded-lg text-[13px] focus:outline-none focus:border-status-blue"
+            />
+            <button type="submit" className="px-3 py-2 bg-status-blue text-white rounded-lg text-[13px] font-medium">Auto-fill</button>
+            <button type="button" onClick={() => setIsScanning(false)} className="px-2 text-cs-gray-400 hover:text-cs-black">
+              <X className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-3.5">
+        <Field label="Full name *">
+          <input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -259,6 +308,7 @@ function WalkInTab({
         {isCheckingIn ? "Processing…" : <><LogIn className="w-3.5 h-3.5" /> Check in</>}
       </button>
     </form>
+    </div>
   );
 }
 
@@ -308,6 +358,7 @@ function PreRegisterTab({
       purpose,
       hostName,
       scheduledFor,
+      inviteCode: localCode,
     });
 
     setCreated({ name, code: localCode, phone: "+91 " + phone, host: hostName });

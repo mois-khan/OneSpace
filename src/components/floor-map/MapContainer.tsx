@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback, useMemo } from "react";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
-import { Seat } from "@/types";
-import { Zone, zoneIcons } from "@/lib/data/floor-plan";
+import { Seat, Zone } from "@/types";
+import { ZoneNode } from "./ZoneNode";
 import { SeatNode } from "./SeatNode";
 import type { ZoneCategory } from "./MapControls";
 
@@ -17,8 +17,11 @@ interface MapContainerProps {
   selectedSeat: Seat | null;
   onSeatSelect: (seat: Seat) => void;
   onSeatsUpdate: (seats: Seat[]) => void;
+  onZonesUpdate?: (zones: Zone[]) => void;
   controlsRef: React.MutableRefObject<{ zoomIn: () => void; zoomOut: () => void; resetTransform: () => void } | null>;
   visibleCategories: Set<ZoneCategory>;
+  floorName?: string;
+  isEditMode?: boolean;
 }
 
 /** Map a Zone.type to a filter category. Support zones (reception, pantry, lounge, manager) always show. */
@@ -46,19 +49,7 @@ function ControlsBridge({
   return null;
 }
 
-// Premium SVG icon renderer — uses <path> with scale transform (no nested <svg>)
-function ZoneIcon({ type, x, y }: { type: Zone["type"]; x: number; y: number }) {
-  const path = zoneIcons[type];
-  if (!path) return null;
-  return (
-    <g transform={`translate(${x}, ${y})`}>
-      <rect x={-2} y={-2} width={18} height={18} rx={4} fill="#fff" opacity={0.75} />
-      <g transform="scale(0.583)">
-        <path d={path} fill="none" stroke="#6B7280" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      </g>
-    </g>
-  );
-}
+
 
 export function MapContainer({
   zones,
@@ -70,8 +61,11 @@ export function MapContainer({
   selectedSeat,
   onSeatSelect,
   onSeatsUpdate,
+  onZonesUpdate,
   controlsRef,
   visibleCategories,
+  floorName,
+  isEditMode = false,
 }: MapContainerProps) {
   const [scale, setScale] = useState(1);
 
@@ -85,8 +79,24 @@ export function MapContainer({
     [seats, onSeatsUpdate]
   );
 
-  /** A zone is "dimmed" if it belongs to a category currently filtered out.
-   *  Always-on zones (reception/pantry/lounge/manager) stay visible. */
+  const handleZoneDragEnd = useCallback((zoneId: string, dx: number, dy: number) => {
+    if (!onZonesUpdate) return;
+    const updatedZones = zones.map((z) => 
+      z.id === zoneId ? { ...z, x: Math.round(z.x + dx), y: Math.round(z.y + dy) } : z
+    );
+    const updatedSeats = seats.map((s) => 
+      s.zoneId === zoneId ? { ...s, x: Math.round(s.x + dx), y: Math.round(s.y + dy) } : s
+    );
+    onZonesUpdate(updatedZones);
+    onSeatsUpdate(updatedSeats);
+  }, [zones, seats, onZonesUpdate, onSeatsUpdate]);
+
+  const handleZoneDelete = useCallback((zoneId: string) => {
+    if (!onZonesUpdate) return;
+    onZonesUpdate(zones.filter((z) => z.id !== zoneId));
+    onSeatsUpdate(seats.filter((s) => s.zoneId !== zoneId));
+  }, [zones, seats, onZonesUpdate, onSeatsUpdate]);
+
   const isZoneVisible = useCallback(
     (zone: Zone) => {
       const cat = zoneCategory(zone.type);
@@ -100,6 +110,13 @@ export function MapContainer({
     for (const z of zones) m.set(z.id, isZoneVisible(z));
     return m;
   }, [zones, isZoneVisible]);
+
+  // Build a map from zoneId to zone type for passing to SeatNode
+  const zoneIdToType = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const z of zones) m.set(z.id, z.type);
+    return m;
+  }, [zones]);
 
   return (
     <div className="flex-1 rounded-xl border border-cs-gray-200 overflow-hidden relative shadow-sm" style={{ background: "linear-gradient(145deg, #FAFBFC 0%, #F1F5F9 100%)" }}>
@@ -125,23 +142,18 @@ export function MapContainer({
           >
             {/* ──── DEFS ──── */}
             <defs>
-              {/* Fine grid */}
               <pattern id="grid-sm" width="20" height="20" patternUnits="userSpaceOnUse">
                 <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E8ECF1" strokeWidth="0.4" />
               </pattern>
-              {/* Major grid */}
               <pattern id="grid-lg" width="100" height="100" patternUnits="userSpaceOnUse">
                 <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#D5DCE5" strokeWidth="0.6" />
               </pattern>
-              {/* Drop shadow for zones */}
               <filter id="zone-shadow" x="-4%" y="-4%" width="108%" height="108%">
                 <feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.06" />
               </filter>
-              {/* Glow for selected seat */}
               <filter id="seat-glow">
                 <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#E8192C" floodOpacity="0.4" />
               </filter>
-              {/* Entrance arrow marker */}
               <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#22C55E" />
               </marker>
@@ -162,7 +174,6 @@ export function MapContainer({
               stroke="#94A3B8"
               strokeWidth={2.5}
             />
-            {/* Wall inner shadow line */}
             <rect
               x={16} y={16}
               width={canvasWidth - 32}
@@ -187,42 +198,13 @@ export function MapContainer({
               const visible = zoneIdToVisible.get(zone.id) ?? true;
               return (
                 <g key={zone.id} opacity={visible ? 1 : 0.18}>
-                  <rect
-                    x={zone.x}
-                    y={zone.y}
-                    width={zone.width}
-                    height={zone.height}
-                    rx={10}
-                    fill={zone.color}
-                    stroke={zone.borderColor}
-                    strokeWidth={1}
-                    filter="url(#zone-shadow)"
-                    opacity={0.85}
+                  <ZoneNode 
+                    zone={zone}
+                    isEditMode={isEditMode}
+                    scale={scale}
+                    onDragEnd={handleZoneDragEnd}
+                    onDelete={handleZoneDelete}
                   />
-                  <rect
-                    x={zone.x + 1}
-                    y={zone.y + 1}
-                    width={zone.width - 2}
-                    height={zone.height - 2}
-                    rx={9}
-                    fill="none"
-                    stroke="#fff"
-                    strokeWidth={0.8}
-                    opacity={0.6}
-                  />
-                  <text
-                    x={zone.x + 28}
-                    y={zone.y + 16}
-                    fill="#374151"
-                    fontSize={9.5}
-                    fontWeight={600}
-                    fontFamily="Inter, sans-serif"
-                    letterSpacing="0.02em"
-                    style={{ userSelect: "none" }}
-                  >
-                    {zone.label}
-                  </text>
-                  <ZoneIcon type={zone.type} x={zone.x + 8} y={zone.y + 5} />
                 </g>
               );
             })}
@@ -253,6 +235,7 @@ export function MapContainer({
                   onSelect={onSeatSelect}
                   onDragEnd={handleDragEnd}
                   scale={scale}
+                  zoneType={zoneIdToType.get(seat.zoneId)}
                 />
               );
             })}
@@ -269,7 +252,7 @@ export function MapContainer({
               letterSpacing="0.05em"
               style={{ userSelect: "none" }}
             >
-              CS Coworking · {branchName} · {address}
+              CS Coworking · {branchName}{floorName ? ` · ${floorName}` : ""} · {address}
             </text>
           </svg>
         </TransformComponent>

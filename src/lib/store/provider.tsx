@@ -18,6 +18,7 @@ import type {
   Notification,
   PreRegistration,
   Visitor,
+  FloorPlan,
 } from "@/types";
 import {
   BRANCHES,
@@ -33,6 +34,7 @@ import {
   generateRooms,
   generateVisitors,
 } from "./generate";
+import { generateFloorPlan } from "@/lib/data/floor-plan";
 import type { AppState } from "./selectors";
 
 export interface OnboardMemberPayload {
@@ -53,7 +55,7 @@ type Action =
   | { type: "SET_USER"; user: CurrentUser }
   | { type: "CHECK_IN_VISITOR"; payload: Omit<Visitor, "id" | "checkInAt" | "qrCode"> }
   | { type: "CHECK_OUT_VISITOR"; id: string }
-  | { type: "ADD_PRE_REGISTRATION"; payload: Omit<PreRegistration, "id" | "inviteCode" | "createdAt" | "status"> }
+  | { type: "ADD_PRE_REGISTRATION"; payload: Omit<PreRegistration, "id" | "createdAt" | "status" | "inviteCode"> & { inviteCode?: string } }
   | { type: "CANCEL_PRE_REGISTRATION"; id: string }
   | { type: "CONVERT_PRE_REGISTRATION"; id: string }
   | { type: "RENEW_MEMBER"; memberId: string; months?: number }
@@ -70,6 +72,7 @@ type Action =
   | { type: "LOG_LEAD_INTERACTION"; leadId: string; interaction: Omit<LeadInteraction, "id" | "timestamp" | "author"> }
   | { type: "ADD_LEAD_NOTE"; leadId: string; text: string }
   | { type: "UPDATE_LEAD"; leadId: string; payload: Partial<Lead> }
+  | { type: "SAVE_FLOOR_PLAN"; branchId: string; floorPlan: FloorPlan }
   | { type: "HYDRATE"; payload: AppState };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -89,6 +92,11 @@ function buildInitialState(now: number): AppState {
   const notifications = generateNotifications(now, members, invoices, visitors, leads);
   const activity = generateActivity(now, members, visitors, leads, bookings, invoices);
   const occupancyTrend = generateOccupancyTrend(now);
+  
+  const floorPlans: Record<string, FloorPlan> = {};
+  for (const b of BRANCHES) {
+    floorPlans[b.id] = generateFloorPlan(b.id);
+  }
 
   return {
     branches: BRANCHES,
@@ -101,6 +109,7 @@ function buildInitialState(now: number): AppState {
     invoices,
     notifications,
     activity,
+    floorPlans,
     occupancyTrend,
     selectedBranchId: "all",
     now,
@@ -115,6 +124,11 @@ function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "HYDRATE":
       return action.payload;
+    case "SAVE_FLOOR_PLAN":
+      return {
+        ...state,
+        floorPlans: { ...state.floorPlans, [action.branchId]: action.floorPlan },
+      };
     case "SET_BRANCH": {
       // Enforce branch lock at the store level — scoped roles cannot switch away
       // from their assigned branch even if a UI somehow tries.
@@ -150,9 +164,39 @@ function reducer(state: AppState, action: Action): AppState {
         link: `/visitors`,
         branchId: newVisitor.branchId,
       };
+
+      // Auto-add to leads if purpose is Enquiry/Event/Demo/Other (not Meeting/Interview/Personal/Delivery)
+      const isMeeting = 
+        newVisitor.purpose === "Meeting" || 
+        newVisitor.purpose === "Interview" || 
+        newVisitor.purpose === "Client Meeting" || 
+        newVisitor.purpose === "Personal" || 
+        newVisitor.purpose === "Delivery";
+      let updatedLeads = state.leads;
+      if (!isMeeting) {
+        const cleanPhone = newVisitor.phone.trim();
+        const leadExists = state.leads.some((l) => l.phone.trim() === cleanPhone);
+        if (!leadExists) {
+          const newLead: Lead = {
+            id: `l-${Date.now()}`,
+            branchId: newVisitor.branchId,
+            name: newVisitor.name,
+            phone: newVisitor.phone,
+            planType: "Flexi",
+            source: "Walk-in",
+            stage: "new",
+            createdAt: new Date(state.now).toISOString(),
+            interactions: [],
+            notes: [],
+          };
+          updatedLeads = [newLead, ...state.leads];
+        }
+      }
+
       return {
         ...state,
         visitors: [newVisitor, ...state.visitors],
+        leads: updatedLeads,
         activity: [activity, ...state.activity].slice(0, 80),
       };
     }
@@ -161,7 +205,7 @@ function reducer(state: AppState, action: Action): AppState {
       const id = `preg-${Date.now()}`;
       // Short, human-friendly invite code
       const rnd = Math.random().toString(36).slice(2, 6).toUpperCase();
-      const inviteCode = `OS-${rnd}`;
+      const inviteCode = action.payload.inviteCode || `OS-${rnd}`;
       const preReg: PreRegistration = {
         id,
         inviteCode,
@@ -216,9 +260,39 @@ function reducer(state: AppState, action: Action): AppState {
         link: "/visitors",
         branchId: newVisitor.branchId,
       };
+
+      // Auto-add to leads if purpose is Enquiry/Event/Demo/Other (not Meeting/Interview/Personal/Delivery)
+      const isMeeting = 
+        preReg.purpose === "Meeting" || 
+        preReg.purpose === "Interview" || 
+        preReg.purpose === "Client Meeting" || 
+        preReg.purpose === "Personal" || 
+        preReg.purpose === "Delivery";
+      let updatedLeads = state.leads;
+      if (!isMeeting) {
+        const cleanPhone = preReg.phone.trim();
+        const leadExists = state.leads.some((l) => l.phone.trim() === cleanPhone);
+        if (!leadExists) {
+          const newLead: Lead = {
+            id: `l-${Date.now()}`,
+            branchId: preReg.branchId,
+            name: preReg.visitorName,
+            phone: preReg.phone,
+            planType: "Flexi",
+            source: "Walk-in",
+            stage: "new",
+            createdAt: new Date(state.now).toISOString(),
+            interactions: [],
+            notes: [],
+          };
+          updatedLeads = [newLead, ...state.leads];
+        }
+      }
+
       return {
         ...state,
         visitors: [newVisitor, ...state.visitors],
+        leads: updatedLeads,
         preRegistrations: state.preRegistrations.map((p) =>
           p.id === action.id ? { ...p, status: "arrived" as const } : p,
         ),
@@ -638,6 +712,20 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state, isLoaded]);
 
+  React.useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "onespace_state" && e.newValue) {
+        try {
+          dispatch({ type: "HYDRATE", payload: JSON.parse(e.newValue) });
+        } catch (err) {
+          console.error("Failed to sync state from storage event", err);
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
   return (
     <StateCtx.Provider value={state}>
       <DispatchCtx.Provider value={dispatch}>{children}</DispatchCtx.Provider>
@@ -670,7 +758,7 @@ export function useAppActions() {
         dispatch({ type: "CHECK_IN_VISITOR", payload }),
       checkOutVisitor: (id: string) => dispatch({ type: "CHECK_OUT_VISITOR", id }),
       addPreRegistration: (
-        payload: Omit<PreRegistration, "id" | "inviteCode" | "createdAt" | "status">,
+        payload: Omit<PreRegistration, "id" | "createdAt" | "status" | "inviteCode"> & { inviteCode?: string },
       ) => dispatch({ type: "ADD_PRE_REGISTRATION", payload }),
       cancelPreRegistration: (id: string) =>
         dispatch({ type: "CANCEL_PRE_REGISTRATION", id }),
@@ -701,6 +789,8 @@ export function useAppActions() {
         dispatch({ type: "ADD_LEAD_NOTE", leadId, text }),
       updateLead: (leadId: string, payload: Partial<Lead>) =>
         dispatch({ type: "UPDATE_LEAD", leadId, payload }),
+      saveFloorPlan: (branchId: string, floorPlan: FloorPlan) =>
+        dispatch({ type: "SAVE_FLOOR_PLAN", branchId, floorPlan }),
     }),
     [dispatch],
   );

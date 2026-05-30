@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Seat } from "@/types";
 import { useAllMembers } from "@/lib/store";
+import { useAppState } from "@/lib/store/provider";
+
 interface SeatNodeProps {
   seat: Seat;
   isSelected: boolean;
   onSelect: (seat: Seat) => void;
   onDragEnd?: (seatId: string, dx: number, dy: number) => void;
   scale: number;
+  zoneType?: string;
 }
 
 const statusColors: Record<Seat["status"], { bg: string; border: string; text: string; glow: string }> = {
@@ -18,18 +21,34 @@ const statusColors: Record<Seat["status"], { bg: string; border: string; text: s
   maintenance: { bg: "#F3F4F6", border: "#D1D5DB", text: "#6B7280", glow: "#9CA3AF" },
 };
 
-export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale }: SeatNodeProps) {
+export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale, zoneType }: SeatNodeProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const colors = statusColors[seat.status];
   const allMembers = useAllMembers();
+  const { invoices } = useAppState();
 
   const memberInfo = seat.memberId ? allMembers.find((m) => m.id === seat.memberId) : null;
 
   const isRoom = seat.code.startsWith("CONF") || seat.code.startsWith("PB");
   const seatW = seat.width;
   const seatH = seat.height;
+
+  const paymentStatus = useMemo(() => {
+    if (seat.status !== "occupied" || !seat.memberId) return null;
+    const memberInvoices = invoices.filter(inv => inv.memberId === seat.memberId);
+    if (memberInvoices.length === 0) return "pending";
+    const sorted = [...memberInvoices].sort((a, b) => new Date(b.dueAt || 0).getTime() - new Date(a.dueAt || 0).getTime());
+    return sorted[0].status;
+  }, [invoices, seat.memberId, seat.status]);
+
+  // Compute fake contract days left
+  const contractDays = useMemo(() => {
+    if (seat.status !== "occupied" || !seat.memberId) return 0;
+    const seed = parseInt(seat.memberId.replace(/\D/g, "")) || 0;
+    return (seed * 37) % 180 + 10;
+  }, [seat.status, seat.memberId]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -62,7 +81,7 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale }: SeatN
       onMouseLeave={() => { setIsHovered(false); }}
       style={{ cursor: isDragging ? "grabbing" : "pointer" }}
     >
-      {/* Selection glow ring — clamped so it never visually disappears */}
+      {/* Selection glow ring */}
       {isSelected && (
         <rect
           x={-3} y={-3}
@@ -92,20 +111,103 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale }: SeatN
         />
       )}
 
-      {/* Seat body */}
-      <rect
-        width={seatW}
-        height={seatH}
-        rx={isRoom ? 6 : 4}
-        ry={isRoom ? 6 : 4}
-        fill={colors.bg}
-        stroke={isSelected ? "#E8192C" : colors.border}
-        strokeWidth={isSelected ? 2 : 1}
-        style={{
-          transition: "all 0.15s ease",
-          filter: isDragging ? "drop-shadow(0 3px 6px rgba(0,0,0,0.2))" : "none",
-        }}
-      />
+      {/* ──── Seat Geometry based on zoneType ──── */}
+      {zoneType === "cabin" ? (
+        <g>
+          <rect
+            width={seatW}
+            height={seatH}
+            rx={4}
+            fill={colors.bg}
+            stroke={isSelected ? "#E8192C" : colors.border}
+            strokeWidth={isSelected ? 2 : 1.5}
+            style={{
+              transition: "all 0.15s ease",
+              filter: isDragging ? "drop-shadow(0 3px 6px rgba(0,0,0,0.2))" : "none",
+            }}
+          />
+          {/* Door notch gap effect */}
+          <path
+            d={`M 0 ${seatH - 6} L 0 ${seatH} L 10 ${seatH}`}
+            fill="none"
+            stroke="#fff"
+            strokeWidth={2.5}
+          />
+        </g>
+      ) : zoneType === "conference" ? (
+        <g>
+          <rect
+            width={seatW}
+            height={seatH}
+            rx={6}
+            fill={colors.bg}
+            stroke={isSelected ? "#E8192C" : colors.border}
+            strokeWidth={isSelected ? 2 : 1.5}
+            style={{ filter: isDragging ? "drop-shadow(0 3px 6px rgba(0,0,0,0.2))" : "none" }}
+          />
+          <rect
+            x={6}
+            y={6}
+            width={seatW - 12}
+            height={seatH - 12}
+            rx={3}
+            fill="none"
+            stroke={colors.border}
+            strokeWidth={1}
+            opacity={0.7}
+          />
+        </g>
+      ) : zoneType === "phone_booth" ? (
+        <g>
+          <rect
+            width={seatW}
+            height={seatH}
+            rx={2}
+            fill={colors.bg}
+            stroke={isSelected ? "#E8192C" : colors.border}
+            strokeWidth={isSelected ? 2 : 2}
+          />
+          <circle cx={seatW/2} cy={seatH/2} r={seatW/4} fill="none" stroke={colors.border} strokeWidth={1} opacity={0.5} />
+        </g>
+      ) : zoneType === "manager" ? (
+        <g>
+          <defs>
+            <linearGradient id={`grad-${seat.id}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor={colors.bg} />
+              <stop offset="100%" stopColor="#fff" stopOpacity={0.6} />
+            </linearGradient>
+          </defs>
+          <rect
+            width={seatW}
+            height={seatH}
+            rx={4}
+            fill={`url(#grad-${seat.id})`}
+            stroke={isSelected ? "#E8192C" : colors.border}
+            strokeWidth={isSelected ? 2 : 1}
+          />
+        </g>
+      ) : (
+        <g>
+          <rect
+            width={seatW}
+            height={seatH}
+            rx={3}
+            fill={colors.bg}
+            stroke={isSelected ? "#E8192C" : colors.border}
+            strokeWidth={isSelected ? 2 : 1}
+            style={{
+              transition: "all 0.15s ease",
+              filter: isDragging ? "drop-shadow(0 3px 6px rgba(0,0,0,0.2))" : "none",
+            }}
+          />
+          {/* Chair bump */}
+          <path
+            d={`M ${seatW / 2 - 5} ${seatH} A 5 5 0 0 0 ${seatW / 2 + 5} ${seatH}`}
+            fill={colors.border}
+            opacity={0.5}
+          />
+        </g>
+      )}
 
       {/* Inner shine highlight */}
       <rect
@@ -115,6 +217,7 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale }: SeatN
         rx={isRoom ? 5 : 3}
         fill="#fff"
         opacity={0.35}
+        style={{ pointerEvents: "none" }}
       />
 
       {/* Seat code label */}
@@ -176,6 +279,19 @@ export function SeatNode({ seat, isSelected, onSelect, onDragEnd, scale }: SeatN
                   weight: 400,
                 });
               }
+              // Payment & Contract
+              lines.push({
+                text: `Payment: ${paymentStatus || "Unknown"}`,
+                color: paymentStatus === "overdue" ? "#FCA5A5" : paymentStatus === "paid" ? "#86EFAC" : "#FCD34D",
+                size: 7,
+                weight: 500,
+              });
+              lines.push({
+                text: `Contract: ${contractDays}d left`,
+                color: contractDays < 30 ? "#FCA5A5" : "#94A3B8",
+                size: 7,
+                weight: 500,
+              });
             }
             const rowH = 11;
             const padY = 8;

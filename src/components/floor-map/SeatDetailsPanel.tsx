@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Seat, Lead } from "@/types";
 import { useAllMembers, useLeads } from "@/lib/store";
+import { useAppState } from "@/lib/store/provider";
 import type { OnboardMemberPayload } from "@/lib/store";
 import {
   X,
@@ -48,6 +49,7 @@ type Tab = "lead" | "new";
 export function SeatDetailsPanel({ seat, branchId, onClose, onAssignSeat }: SeatDetailsPanelProps) {
   const allMembers = useAllMembers();
   const allLeads = useLeads(branchId);
+  const { invoices } = useAppState();
 
   // Available seat assignment state
   const [activeTab, setActiveTab] = useState<Tab>("lead");
@@ -76,6 +78,25 @@ export function SeatDetailsPanel({ seat, branchId, onClose, onAssignSeat }: Seat
   const cfg = statusConfig[seat.status];
   const memberInfo = seat.memberId ? allMembers.find((m) => m.id === seat.memberId) : null;
   const isAtRisk = memberInfo?.status === "expiring";
+
+  // Compute payment status based on invoices
+  let paymentStatus: string | null = null;
+  if (seat.status === "occupied" && seat.memberId) {
+    const memberInvoices = invoices.filter(inv => inv.memberId === seat.memberId);
+    if (memberInvoices.length === 0) {
+      paymentStatus = "pending";
+    } else {
+      const sorted = [...memberInvoices].sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime());
+      paymentStatus = sorted[0].status;
+    }
+  }
+
+  // Compute fake contract days left for display
+  let contractDays = 0;
+  if (seat.status === "occupied" && seat.memberId) {
+    const seed = parseInt(seat.memberId.replace(/\D/g, "")) || 0;
+    contractDays = (seed * 37) % 180 + 10;
+  }
 
   const handleAssignLead = () => {
     if (!selectedLead || !onAssignSeat) return;
@@ -166,6 +187,26 @@ export function SeatDetailsPanel({ seat, branchId, onClose, onAssignSeat }: Seat
                   <CreditCard className="w-3.5 h-3.5" />
                   {formatCurrency(memberInfo.monthlyFee)}/mo
                 </div>
+                
+                <div className="border-t border-cs-gray-200 my-2"></div>
+                
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-cs-gray-500">Contract</span>
+                  <span className={cn("font-semibold", contractDays < 30 ? "text-red-600" : "text-cs-black")}>
+                    {contractDays} days left
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-cs-gray-500">Payment</span>
+                  <span className={cn(
+                    "font-semibold capitalize",
+                    paymentStatus === "paid" && "text-green-600",
+                    paymentStatus === "overdue" && "text-red-600",
+                    paymentStatus === "pending" && "text-yellow-600"
+                  )}>
+                    {paymentStatus || "Unknown"}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -173,9 +214,9 @@ export function SeatDetailsPanel({ seat, branchId, onClose, onAssignSeat }: Seat
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex gap-3">
                 <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-red-700">Contract Ending in 5 Days</p>
+                  <p className="text-xs font-semibold text-red-700">Contract Ending Soon</p>
                   <p className="text-xs text-red-600 mt-0.5">
-                    High churn risk — no renewal initiated. 22 days since last visit.
+                    High churn risk — no renewal initiated.
                   </p>
                 </div>
               </div>

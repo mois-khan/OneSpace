@@ -9,10 +9,20 @@ import {
   ZoomOut,
   Maximize2,
   Activity,
+  Layers,
+  Edit3,
+  Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ZoneCategory = "hot_desk" | "dedicated" | "cabin" | "meeting";
+
+interface FloorInfo {
+  id: string;
+  name: string;
+  level: number;
+  seatCount: number;
+}
 
 interface MapControlsProps {
   branches: { id: string; name: string }[];
@@ -30,6 +40,12 @@ interface MapControlsProps {
   };
   visibleCategories: Set<ZoneCategory>;
   onToggleCategory: (cat: ZoneCategory) => void;
+  floors: FloorInfo[];
+  activeFloorId: string;
+  onFloorChange: (floorId: string) => void;
+  isEditMode?: boolean;
+  onToggleEditMode?: () => void;
+  onSaveLayout?: () => void;
 }
 
 const STATUS_LEGEND: Array<{
@@ -65,6 +81,12 @@ export function MapControls({
   occupancyStats,
   visibleCategories,
   onToggleCategory,
+  floors,
+  activeFloorId,
+  onFloorChange,
+  isEditMode,
+  onToggleEditMode,
+  onSaveLayout,
 }: MapControlsProps) {
   const occupancyPct =
     occupancyStats.total > 0
@@ -75,7 +97,7 @@ export function MapControls({
 
   return (
     <div className="mb-4 space-y-3">
-      {/* Toolbar row 1 — branch picker · live occupancy · zoom */}
+      {/* Toolbar row 1 — branch picker · floor tabs · live occupancy · zoom */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <select
@@ -89,6 +111,28 @@ export function MapControls({
               </option>
             ))}
           </select>
+
+          {/* Floor Selector Tabs */}
+          {floors.length > 1 && (
+            <div className="flex items-center bg-white border border-cs-gray-200 rounded-lg p-0.5 gap-0.5">
+              <Layers className="w-3.5 h-3.5 text-cs-gray-400 ml-2 mr-1" />
+              {floors.map((floor) => (
+                <button
+                  key={floor.id}
+                  onClick={() => onFloorChange(floor.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all whitespace-nowrap",
+                    activeFloorId === floor.id
+                      ? "bg-cs-red text-white shadow-sm"
+                      : "text-cs-gray-500 hover:text-cs-black hover:bg-cs-gray-50"
+                  )}
+                  title={`${floor.name} · ${floor.seatCount} seats`}
+                >
+                  {floor.name}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center gap-2 bg-white border border-cs-gray-200 rounded-lg px-3 py-2">
             <Activity className="w-3.5 h-3.5 text-cs-red" />
@@ -123,6 +167,31 @@ export function MapControls({
             aria-label="Reset view"
           >
             <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Edit Mode Toggles */}
+        <div className="flex items-center gap-2">
+          {isEditMode && (
+            <button
+              onClick={onSaveLayout}
+              className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+            >
+              <Save className="w-4 h-4" />
+              Save Layout
+            </button>
+          )}
+          <button
+            onClick={onToggleEditMode}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg transition-colors border",
+              isEditMode
+                ? "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
+                : "bg-white text-cs-black border-cs-gray-200 hover:bg-cs-gray-50"
+            )}
+          >
+            <Edit3 className="w-4 h-4" />
+            {isEditMode ? "Exit Design Mode" : "Design Map"}
           </button>
         </div>
       </div>
